@@ -5,8 +5,6 @@ export const config = {
   api: {
     bodyParser: false,
   },
-  runtime: 'nodejs18.x',
-  maxDuration: 60,
 };
 
 async function handler(req, res) {
