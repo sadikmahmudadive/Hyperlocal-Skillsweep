@@ -6,19 +6,29 @@ import { useToast } from '../../contexts/ToastContext';
 
 export default function Reset() {
   const router = useRouter();
-  const { token } = router.query;
+  const { query, isReady } = router;
+  const token = query?.token;
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
   const { addToast } = useToast();
+  const [readyToken, setReadyToken] = useState(null);
 
   useEffect(() => {
-    // No-op: token arrives via query
-  }, [token]);
+    // Wait for Next.js router to be ready, then capture token (may be URL-encoded)
+    if (!isReady) return;
+    if (token) {
+      try {
+        setReadyToken(decodeURIComponent(token));
+      } catch (_) {
+        setReadyToken(token);
+      }
+    }
+  }, [isReady, token]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!token) {
+    if (!readyToken) {
       addToast({ type: 'error', title: 'Missing token', message: 'Reset token is missing from the URL.' });
       return;
     }
@@ -35,7 +45,7 @@ export default function Reset() {
       const res = await fetch('/api/auth/reset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, password })
+        body: JSON.stringify({ token: readyToken, password })
       });
       const data = await res.json();
       if (res.ok) {

@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     // Create a short-lived token (1 hour)
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
     const base = process.env.NEXT_PUBLIC_BASE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
-    const resetLink = `${base.replace(/\/$/, '')}/auth/reset?token=${token}`;
+  const resetLink = `${base.replace(/\/$/, '')}/auth/reset?token=${encodeURIComponent(token)}`;
 
     // If SENDGRID_API_KEY is set, attempt to send the reset email (suitable for production)
     if (process.env.SENDGRID_API_KEY) {
