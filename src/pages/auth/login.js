@@ -130,9 +130,12 @@ export default function Login() {
             <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-emerald-500 focus:ring-emerald-400" />
             <span>Keep me signed in</span>
           </label>
-          <span className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-emerald-600 dark:border-emerald-500/20 dark:text-emerald-200">
-            Secure login
-          </span>
+          <div className="flex items-center gap-3">
+            <a href="/auth/forgot" className="text-xs underline text-slate-600 hover:text-slate-700 dark:text-slate-300">Forgot password?</a>
+            <span className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-emerald-600 dark:border-emerald-500/20 dark:text-emerald-200">
+              Secure login
+            </span>
+          </div>
         </div>
 
         <Button type="submit" className="w-full justify-center" loading={loading} disabled={loading}>
