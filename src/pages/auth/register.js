@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { useToast } from '../../contexts/ToastContext';
 import AuthLayout from '../../components/auth/AuthLayout';
@@ -16,16 +16,29 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { addToast } = useToast();
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  const isFormValid = useMemo(() => {
+    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword || !formData.address) return false;
+    if (formData.password !== formData.confirmPassword) return false;
+    if (!/^\S+@\S+\.\S+$/.test(formData.email)) return false;
+    if (formData.password.length < 6) return false;
+    return true;
+  }, [formData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    // client-side validation
+    const errs = {};
+    if (!formData.name) errs.name = 'Name is required';
+    if (!formData.email || !/^\S+@\S+\.\S+$/.test(formData.email)) errs.email = 'Valid email required';
+    if (!formData.password || formData.password.length < 6) errs.password = 'Password must be at least 6 characters';
+    if (formData.password !== formData.confirmPassword) errs.confirmPassword = "Passwords don't match";
+    if (!formData.address) errs.address = 'Address is required';
 
-    if (formData.password !== formData.confirmPassword) {
-      addToast({ type: 'error', title: 'Oops', message: "Passwords don't match" });
-      setLoading(false);
-      return;
-    }
+    setFieldErrors(errs);
+    if (Object.keys(errs).length > 0) { setLoading(false); return; }
 
     try {
       const response = await fetch('/api/auth/register', {
@@ -95,7 +108,10 @@ export default function Register() {
               value={formData.name}
               onChange={handleChange}
               placeholder="Avery Johnson"
+              aria-invalid={fieldErrors.name ? 'true' : 'false'}
+              aria-describedby={fieldErrors.name ? 'name-error' : undefined}
             />
+            {fieldErrors.name && <div id="name-error" className="text-xs text-rose-600 mt-1">{fieldErrors.name}</div>}
           </div>
 
           <div className="space-y-2">
@@ -112,7 +128,10 @@ export default function Register() {
               value={formData.email}
               onChange={handleChange}
               placeholder="you@example.com"
+              aria-invalid={fieldErrors.email ? 'true' : 'false'}
+              aria-describedby={fieldErrors.email ? 'email-error' : undefined}
             />
+            {fieldErrors.email && <div id="email-error" className="text-xs text-rose-600 mt-1">{fieldErrors.email}</div>}
           </div>
         </div>
 
@@ -131,7 +150,10 @@ export default function Register() {
               value={formData.password}
               onChange={handleChange}
               placeholder="••••••••"
+              aria-invalid={fieldErrors.password ? 'true' : 'false'}
+              aria-describedby={fieldErrors.password ? 'password-error' : undefined}
             />
+            {fieldErrors.password && <div id="password-error" className="text-xs text-rose-600 mt-1">{fieldErrors.password}</div>}
           </div>
 
           <div className="space-y-2">
@@ -148,7 +170,10 @@ export default function Register() {
               value={formData.confirmPassword}
               onChange={handleChange}
               placeholder="Match your password"
+              aria-invalid={fieldErrors.confirmPassword ? 'true' : 'false'}
+              aria-describedby={fieldErrors.confirmPassword ? 'confirmPassword-error' : undefined}
             />
+            {fieldErrors.confirmPassword && <div id="confirmPassword-error" className="text-xs text-rose-600 mt-1">{fieldErrors.confirmPassword}</div>}
           </div>
         </div>
 
@@ -166,7 +191,10 @@ export default function Register() {
             value={formData.address}
             onChange={handleChange}
             placeholder="123 Market St, Springfield, 54321"
+            aria-invalid={fieldErrors.address ? 'true' : 'false'}
+            aria-describedby={fieldErrors.address ? 'address-error' : undefined}
           />
+          {fieldErrors.address && <div id="address-error" className="text-xs text-rose-600 mt-1">{fieldErrors.address}</div>}
         </div>
 
         <div className="space-y-2">
@@ -193,7 +221,7 @@ export default function Register() {
           </span>
         </div>
 
-        <Button type="submit" className="w-full justify-center" loading={loading} disabled={loading}>
+        <Button type="submit" className="w-full justify-center" loading={loading} disabled={loading || !isFormValid}>
           {loading ? 'Creating account…' : 'Create your account'}
         </Button>
       </form>

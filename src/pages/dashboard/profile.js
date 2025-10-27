@@ -24,6 +24,7 @@ export default function EditProfile() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [fieldErrors, setFieldErrors] = useState({});
   const fileInputRef = useRef(null);
   
   const router = useRouter();
@@ -143,6 +144,21 @@ export default function EditProfile() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // client-side validation
+    const errs = {};
+    if (!formData.name || !formData.name.trim()) errs.name = 'Name is required';
+    if (!formData.address || !formData.address.trim()) errs.address = 'Address is required';
+    const md = parseInt(formData.maxDistance, 10);
+    if (Number.isNaN(md) || md < 1 || md > 100) errs.maxDistance = 'Max distance must be between 1 and 100';
+    if (formData.bio && formData.bio.length > 500) errs.bio = 'Bio must be 500 characters or fewer';
+    if (avatarError) errs.avatar = avatarError;
+    setFieldErrors(errs);
+    if (Object.keys(errs).length > 0) {
+      setMessage('Please fix the highlighted errors and try again.');
+      addToast({ type: 'error', title: 'Validation', message: 'Please fix form errors' });
+      return;
+    }
+
     setLoading(true);
     setMessage('');
     setUploadProgress(0);
@@ -409,7 +425,10 @@ export default function EditProfile() {
               placeholder="Your name"
               required
               maxLength={50}
+              aria-invalid={fieldErrors.name ? 'true' : 'false'}
+              aria-describedby={fieldErrors.name ? 'name-error' : undefined}
             />
+            {fieldErrors.name && <div id="name-error" className="text-xs text-rose-600">{fieldErrors.name}</div>}
             <div className="text-xs text-slate-400">{formData.name?.length || 0}/50</div>
           </div>
 
@@ -426,7 +445,10 @@ export default function EditProfile() {
               className="input-field resize-none"
               placeholder="Share your story, specialties, and what you love to trade (max 500 characters)."
               maxLength={500}
+              aria-invalid={fieldErrors.bio ? 'true' : 'false'}
+              aria-describedby={fieldErrors.bio ? 'bio-error' : undefined}
             />
+            {fieldErrors.bio && <div id="bio-error" className="text-xs text-rose-600">{fieldErrors.bio}</div>}
             <div className="text-xs text-slate-400">{formData.bio?.length || 0}/500</div>
           </div>
 
@@ -443,7 +465,10 @@ export default function EditProfile() {
               className="input-field"
               placeholder="Neighborhood, city, or meetup area"
               required
+              aria-invalid={fieldErrors.address ? 'true' : 'false'}
+              aria-describedby={fieldErrors.address ? 'address-error' : undefined}
             />
+            {fieldErrors.address && <div id="address-error" className="text-xs text-rose-600">{fieldErrors.address}</div>}
           </div>
 
           <div className="space-y-2">
@@ -460,7 +485,10 @@ export default function EditProfile() {
               onChange={handleInputChange}
               className="input-field"
               required
+              aria-invalid={fieldErrors.maxDistance ? 'true' : 'false'}
+              aria-describedby={fieldErrors.maxDistance ? 'maxDistance-error' : undefined}
             />
+            {fieldErrors.maxDistance && <div id="maxDistance-error" className="text-xs text-rose-600">{fieldErrors.maxDistance}</div>}
           </div>
         </section>
 

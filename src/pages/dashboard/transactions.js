@@ -475,6 +475,8 @@ export default function Transactions() {
 function ReviewForm({ submitting, onSubmit, initialRating, initialComment, onDelete }) {
   const [rating, setRating] = useState(typeof initialRating === 'number' ? initialRating : 5);
   const [comment, setComment] = useState(initialComment || '');
+  const [fieldErrors, setFieldErrors] = useState({});
+  const { addToast } = useToast();
 
   useEffect(() => {
     if (typeof initialRating === 'number') setRating(initialRating);
@@ -483,6 +485,12 @@ function ReviewForm({ submitting, onSubmit, initialRating, initialComment, onDel
   useEffect(() => {
     if (typeof initialComment === 'string') setComment(initialComment);
   }, [initialComment]);
+
+  useEffect(() => {
+    // clear field errors when user types
+    if (fieldErrors.comment && comment.length <= 500) setFieldErrors(prev => ({ ...prev, comment: undefined }));
+    if (fieldErrors.rating && rating >=1 && rating <=5) setFieldErrors(prev => ({ ...prev, rating: undefined }));
+  }, [comment, rating]);
 
   return (
     <form
@@ -514,7 +522,10 @@ function ReviewForm({ submitting, onSubmit, initialRating, initialComment, onDel
           placeholder="Share your experience..."
           value={comment}
           onChange={(e) => setComment(e.target.value)}
+          aria-invalid={fieldErrors.comment ? 'true' : 'false'}
+          aria-describedby={fieldErrors.comment ? 'comment-error' : undefined}
         />
+        {fieldErrors.comment && <div id="comment-error" className="text-xs text-rose-600 mt-1">{fieldErrors.comment}</div>}
         <div className="text-xs text-gray-500 dark:text-slate-400 text-right">{comment.length}/500</div>
       </div>
       <div className="flex justify-between space-x-2">
@@ -534,7 +545,20 @@ function ReviewForm({ submitting, onSubmit, initialRating, initialComment, onDel
         <Button
           type="submit"
           loading={submitting}
-          disabled={submitting || !(rating >=1 && rating <=5)}
+          disabled={submitting || !(rating >=1 && rating <=5) || (comment.length > 500)}
+          onClick={(e) => {
+            // defensive client-side validation before calling onSubmit
+            const errs = {};
+            if (!(rating >=1 && rating <=5)) errs.rating = 'Please select a rating between 1 and 5';
+            if (comment.length > 500) errs.comment = 'Comment must be 500 characters or fewer';
+            setFieldErrors(errs);
+            if (Object.keys(errs).length > 0) {
+              e.preventDefault();
+              addToast({ type: 'error', title: 'Validation', message: 'Please fix errors before submitting' });
+              return;
+            }
+            // otherwise allow form submit to proceed
+          }}
         >
           {onDelete ? 'Update Review' : 'Submit Review'}
         </Button>

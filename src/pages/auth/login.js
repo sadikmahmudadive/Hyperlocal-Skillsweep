@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import AuthLayout from '../../components/auth/AuthLayout';
 import { Button } from '../../components/ui/Button';
 
@@ -9,10 +10,45 @@ export default function Login() {
     password: ''
   });
   const { login, loading, error } = useAuth();
+  const { addToast } = useToast();
+  const [fieldErrors, setFieldErrors] = useState({});
+
+  useEffect(() => {
+    if (error) {
+      addToast({ type: 'error', title: 'Login failed', message: error });
+      // clear auth error for next interaction if available
+      if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+        try {
+          // attempt to clear error via exposed auth method if present
+          // useAuth provides clearError via context; we can call it if available
+          // (guarded to avoid runtime errors if not present)
+          const ctx = require('../../contexts/AuthContext');
+          if (ctx && ctx.useAuth) {
+            const c = ctx.useAuth();
+            if (c && typeof c.clearError === 'function') c.clearError();
+          }
+        } catch (_) {
+          // ignore; defensive only
+        }
+      }
+    }
+  }, [error]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await login(formData.email, formData.password);
+    // client-side validation
+    const errs = {};
+    if (!formData.email || !/^\S+@\S+\.\S+$/.test(formData.email)) errs.email = 'Please enter a valid email';
+    if (!formData.password || formData.password.length < 6) errs.password = 'Password must be at least 6 characters';
+    setFieldErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
+    try {
+      await login(formData.email, formData.password);
+    } catch (err) {
+      // login errors are surfaced via auth context; show a generic toast fallback
+      addToast({ type: 'error', title: 'Login error', message: err?.message || 'Unable to sign in' });
+    }
   };
 
   const handleChange = (e) => {
@@ -37,14 +73,17 @@ export default function Login() {
       switchLinkLabel="Create an account"
     >
       <form className="space-y-5" onSubmit={handleSubmit}>
-        {error && (
-          <div className="relative overflow-hidden rounded-2xl border border-rose-200/60 bg-rose-50/80 px-4 py-3 text-sm text-rose-600 shadow-inner dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200">
-            <div className="flex items-start gap-3">
-              <span className="text-base">⚠️</span>
-              <span>{error}</span>
+        {/* inline field errors (accessible) */}
+        <div aria-live="polite" className="min-h-[1.5rem]">
+          {fieldErrors._form && (
+            <div className="relative overflow-hidden rounded-2xl border border-rose-200/60 bg-rose-50/80 px-4 py-3 text-sm text-rose-600 shadow-inner dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200">
+              <div className="flex items-start gap-3">
+                <span className="text-base">⚠️</span>
+                <span>{fieldErrors._form}</span>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         <div className="space-y-2">
           <label htmlFor="email" className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300">
@@ -60,7 +99,10 @@ export default function Login() {
             value={formData.email}
             onChange={handleChange}
             placeholder="you@example.com"
+            aria-invalid={fieldErrors.email ? 'true' : 'false'}
+            aria-describedby={fieldErrors.email ? 'email-error' : undefined}
           />
+          {fieldErrors.email && <div id="email-error" className="text-xs text-rose-600 mt-1">{fieldErrors.email}</div>}
         </div>
 
         <div className="space-y-2">
@@ -77,7 +119,10 @@ export default function Login() {
             value={formData.password}
             onChange={handleChange}
             placeholder="••••••••"
+            aria-invalid={fieldErrors.password ? 'true' : 'false'}
+            aria-describedby={fieldErrors.password ? 'password-error' : undefined}
           />
+          {fieldErrors.password && <div id="password-error" className="text-xs text-rose-600 mt-1">{fieldErrors.password}</div>}
         </div>
 
         <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
