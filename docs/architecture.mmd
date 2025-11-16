@@ -1,0 +1,42 @@
+%% Hyperlocal SkillSwap — Architecture (Mermaid)
+
+flowchart TD
+  U[Browser\nNext.js + React] -->|HTTPS| N[Next.js App\n(Pages + Components)]
+  N -->|API calls| A[API Routes\nNext.js]
+  A -->|JWT verify / CRUD| M[(MongoDB)]
+  N -->|Optimized images| IMG[Next Image / CDN]
+  A -->|Media upload| C[Cloudinary]
+  A -->|Email (reset)| SG[SendGrid]
+  N -->|SSE subscribe| SSE[/ /api/events/stream \n SSE /]
+  SSE <-->|publish/subscribe| R[(Redis - optional)]
+  N -->|Hosted| V[Vercel]
+
+  classDef svc fill:#eef,stroke:#66c,stroke-width:1px;
+  classDef ext fill:#efe,stroke:#6c6,stroke-width:1px;
+  classDef db fill:#fee,stroke:#c66,stroke-width:1px;
+  class N,A,SSE,V svc;
+  class C,SG,IMG ext;
+  class M,R db;
+
+%% Key flows
+%% 1) Auth: U -> N -> A -> M -> (JWT) -> U
+%% 2) Password reset: U -> A -> SG -> (Email) -> U -> A -> M
+%% 3) Upload: U -> N -> A -> C (returns URL) -> A -> M
+%% 4) Realtime chat: U -> SSE (subscribe), A -> R (publish), SSE -> U (event)
+
+---
+%% Optional: Sequence diagram for Password Reset
+sequenceDiagram
+  participant User as User (Browser)
+  participant API as Next API
+  participant Mail as SendGrid
+  participant DB as MongoDB
+
+  User->>API: POST /api/auth/request-reset { email }
+  API->>DB: find user by email
+  API->>Mail: send reset link (JWT, 1h)
+  Mail-->>User: Reset email with link
+  User->>API: POST /api/auth/reset { token, password }
+  API->>API: verify JWT
+  API->>DB: update password hash
+  API-->>User: 200 OK (set auth cookie)

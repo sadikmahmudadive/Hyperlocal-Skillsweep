@@ -1,0 +1,71 @@
+<mxfile host="app.diagrams.net" modified="2025-11-16T00:00:00.000Z" agent="github-copilot" version="22.0.8">
+  <diagram id="arch" name="Architecture">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Vertices -->
+        <mxCell id="U" value="Browser\nNext.js + React" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e6f7ff;strokeColor=#1890ff;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="60" width="180" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="N" value="Next.js App\n(Pages + Components)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f6ffed;strokeColor=#52c41a;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="300" y="60" width="230" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="A" value="API Routes\n(Next.js)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f6ffed;strokeColor=#52c41a;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="300" y="160" width="230" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="M" value="MongoDB" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff1f0;strokeColor=#f5222d;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="570" y="160" width="180" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="IMG" value="next/image / CDN" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#8c8c8c;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="570" y="60" width="180" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="C" value="Cloudinary (Media Uploads)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#8c8c8c;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="570" y="240" width="180" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="SG" value="SendGrid (Email)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fafafa;strokeColor=#8c8c8c;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="570" y="320" width="180" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="SSE" value="SSE Endpoint\n/api/events/stream" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f6ffed;strokeColor=#52c41a;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="300" y="260" width="230" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="R" value="Redis (Optional Pub/Sub)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff1f0;strokeColor=#f5222d;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="570" y="400" width="180" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="V" value="Vercel (Hosting)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f6ffed;strokeColor=#52c41a;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="300" y="340" width="230" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Edges -->
+        <mxCell id="e1" value="HTTPS" edge="1" parent="1" source="U" target="N" style="endArrow=block;rounded=0;strokeColor=#595959;fontSize=11;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e2" value="API calls" edge="1" parent="1" source="N" target="A" style="endArrow=block;rounded=0;strokeColor=#595959;fontSize=11;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e3" value="CRUD + JWT verify" edge="1" parent="1" source="A" target="M" style="endArrow=block;rounded=0;strokeColor=#595959;fontSize=11;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e4" value="Optimized images" edge="1" parent="1" source="N" target="IMG" style="endArrow=block;rounded=0;strokeColor=#595959;fontSize=11;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e5" value="Upload" edge="1" parent="1" source="A" target="C" style="endArrow=block;rounded=0;strokeColor=#595959;fontSize=11;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e6" value="Email (reset)" edge="1" parent="1" source="A" target="SG" style="endArrow=block;rounded=0;strokeColor=#595959;fontSize=11;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e7" value="Subscribe" edge="1" parent="1" source="N" target="SSE" style="endArrow=block;rounded=0;strokeColor=#595959;fontSize=11;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e8" value="Publish/Subscribe" edge="1" parent="1" source="SSE" target="R" style="endArrow=block;rounded=0;strokeColor=#595959;fontSize=11;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e9" value="Hosted" edge="1" parent="1" source="N" target="V" style="endArrow=block;rounded=0;strokeColor=#595959;fontSize=11;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
