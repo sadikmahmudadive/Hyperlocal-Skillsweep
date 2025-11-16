@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6d28d9" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.9"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="#0b1221"/>
+  <rect x="40" y="40" width="1200" height="640" rx="16" fill="#111827" stroke="url(#g)" stroke-width="3"/>
+  <text x="80" y="120" font-family="Inter, Arial" font-size="42" fill="#e5e7eb">Placeholder — Auth / Profile Screenshot</text>
+  <text x="80" y="180" font-family="Inter, Arial" font-size="22" fill="#94a3b8">Replace this SVG with a real screenshot (PNG/JPG)</text>
+</svg>

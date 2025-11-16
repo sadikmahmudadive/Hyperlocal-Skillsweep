@@ -1,0 +1,134 @@
+%% Mermaid — Business Model (Canvas + Mindmap)
+
+%% Canvas (grouped by subgraphs)
+flowchart LR
+  subgraph KP[Key Partners]
+    KP1[Community orgs & NGOs]
+    KP2[Campuses & HOAs]
+    KP3[Coworking & maker spaces]
+    KP4[Local businesses]
+    KP5[Infra: Vercel, MongoDB, Cloudinary, SendGrid, Mapbox]
+  end
+
+  subgraph KA[Key Activities]
+    KA1[Platform development]
+    KA2[Trust & safety, moderation]
+    KA3[Onboarding & community ops]
+    KA4[Partnerships & growth]
+    KA5[Support & success]
+  end
+
+  subgraph KR[Key Resources]
+    KR1[Product & codebase]
+    KR2[Brand & community]
+    KR3[Ambassadors & moderators]
+    KR4[Data & insights]
+    KR5[Infra & tooling]
+  end
+
+  subgraph VP[Value Propositions]
+    VP1[Cashless time-credit exchanges]
+    VP2[Hyperlocal trust & reciprocity]
+    VP3[Structured flow lowers friction]
+    VP4[Affordable access to help]
+  end
+
+  subgraph CR[Customer Relationships]
+    CR1[Reputation & reviews]
+    CR2[Notifications & guidance]
+    CR3[Community standards]
+    CR4[Responsive support]
+  end
+
+  subgraph CH[Channels]
+    CH1[Local ambassadors]
+    CH2[Community partnerships]
+    CH3[Campus & social groups]
+    CH4[Content/SEO]
+  end
+
+  subgraph CS[Customer Segments]
+    CS1[Neighbors & families]
+    CS2[Students & retirees]
+    CS3[Creators & freelancers]
+    CS4[Community orgs & campuses]
+  end
+
+  subgraph $Cost[Cost Structure]
+    C1[Hosting & infra]
+    C2[Moderation & support]
+    C3[Growth & partnerships]
+    C4[Email/SMS & tooling]
+    C5[Compliance & admin]
+  end
+
+  subgraph $Revenue[Revenue Streams]
+    R1[Premium placement]
+    R2[Org subscriptions (admin tools)]
+    R3[Sponsored listings/partners]
+    R4[Credit top-ups / donations]
+  end
+
+  %% High-level relationships
+  KP --> KA
+  KR --> KA
+  KA --> VP
+  VP --> CS
+  CH --> CS
+  CR --> CS
+  $Cost --> KA
+  $Revenue --> VP
+
+
+%% Mindmap (alternate view)
+mindmap
+  root((Hyperlocal SkillSwap — Business Model))
+    Value Propositions
+      Cashless time credits
+      Hyperlocal trust
+      Structured request→review flow
+      Affordable access
+    Customer Segments
+      Neighbors & families
+      Students & retirees
+      Creators & freelancers
+      Community orgs & campuses
+    Channels
+      Ambassadors
+      Partnerships
+      Campus/social groups
+      Content/SEO
+    Customer Relationships
+      Reviews & reputation
+      Guidance & notifications
+      Community standards
+      Support
+    Key Resources
+      Product codebase
+      Brand & community
+      Ambassadors/moderators
+      Data & insights
+      Infra/tooling
+    Key Activities
+      Development
+      Trust & safety
+      Onboarding & ops
+      Partnerships & growth
+      Support
+    Key Partners
+      Community orgs
+      Campuses/HOAs
+      Coworking/makerspaces
+      Local businesses
+      Infra vendors
+    Cost Structure
+      Hosting/infra
+      Moderation/support
+      Growth/partnerships
+      Email/tooling
+      Compliance/admin
+    Revenue Streams
+      Premium placement
+      Org subscriptions
+      Sponsored listings
+      Credit top-ups/donations
