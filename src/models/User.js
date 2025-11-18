@@ -171,6 +171,36 @@ const userSchema = new mongoose.Schema({
   },
   favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   savedSearches: [savedSearchSchema]
+  ,
+  // Bangladesh-specific payment & identity fields
+  phoneNumber: {
+    type: String,
+    trim: true,
+    maxlength: 20,
+  },
+  nidVerified: {
+    type: Boolean,
+    default: false
+  },
+  paymentMethods: [
+    {
+      provider: { type: String, enum: ['bkash', 'nagad', 'bank'], required: true },
+      account: { type: String, required: true, trim: true }, // wallet number or masked bank acct
+      label: { type: String, trim: true }, // optional friendly name
+      active: { type: Boolean, default: true },
+      metadata: { type: mongoose.Schema.Types.Mixed }, // store provider-specific fields
+      addedAt: { type: Date, default: Date.now }
+    }
+  ],
+  currency: {
+    type: String,
+    default: 'BDT'
+  },
+  creditRate: { // how many BDT per 1 credit (reference snapshot; authoritative value comes from config)
+    type: Number,
+    default: parseFloat(process.env.CREDIT_RATE_BDT || '50'),
+    min: 1
+  }
 }, {
   timestamps: true
 });
