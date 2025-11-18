@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import AuthLayout from '../../components/auth/AuthLayout';
@@ -131,7 +132,7 @@ export default function Login() {
             <span>Keep me signed in</span>
           </label>
           <div className="flex items-center gap-3">
-            <a href="/auth/forgot" className="text-xs underline text-slate-600 hover:text-slate-700 dark:text-slate-300">Forgot password?</a>
+            <Link href="/auth/forgot" className="text-xs underline text-slate-600 hover:text-slate-700 dark:text-slate-300">Forgot password?</Link>
             <span className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-emerald-600 dark:border-emerald-500/20 dark:text-emerald-200">
               Secure login
             </span>
