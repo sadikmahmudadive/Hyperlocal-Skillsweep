@@ -5,19 +5,23 @@ import { requireAuth } from '../../../../middleware/auth';
 import payments from '../../../../lib/payments';
 
 async function handler(req, res) {
-  if (req.method === 'OPTIONS') {
+  const method = (req.method || '').toUpperCase();
+  if (method === 'OPTIONS') {
     res.setHeader('Allow', 'POST, OPTIONS');
     return res.status(200).end();
   }
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST, OPTIONS');
+  // Temporarily allow GET for robustness/troubleshooting in production
+  if (method !== 'POST' && method !== 'GET') {
+    res.setHeader('Allow', 'POST, GET, OPTIONS');
     return res.status(405).json({ success: false, message: 'Method not allowed' });
   }
 
   await dbConnect();
 
   try {
-    const { credits, provider } = req.body;
+    const { credits: bodyCredits, provider: bodyProvider } = req.body || {};
+    const credits = method === 'GET' ? Number(req.query.credits) : Number(bodyCredits);
+    const provider = method === 'GET' ? req.query.provider : bodyProvider;
     const error = payments.validateTopUp(credits);
     if (error) return res.status(400).json({ success: false, message: error });
     if (!payments.supportedProvider(provider)) return res.status(400).json({ success: false, message: 'Unsupported provider' });

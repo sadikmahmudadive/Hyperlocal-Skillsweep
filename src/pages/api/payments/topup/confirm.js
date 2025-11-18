@@ -5,11 +5,12 @@ import { requireAuth } from '../../../../middleware/auth';
 import payments from '../../../../lib/payments';
 
 async function handler(req, res) {
-  if (req.method === 'OPTIONS') {
+  const method = (req.method || '').toUpperCase();
+  if (method === 'OPTIONS') {
     res.setHeader('Allow', 'POST, OPTIONS');
     return res.status(200).end();
   }
-  if (req.method !== 'POST') {
+  if (method !== 'POST') {
     res.setHeader('Allow', 'POST, OPTIONS');
     return res.status(405).json({ success: false, message: 'Method not allowed' });
   }
