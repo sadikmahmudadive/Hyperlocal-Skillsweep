@@ -20,6 +20,20 @@ export default function TopUpModal({ open, onClose, initialCredits = 10, initial
   const { addToast } = useToast();
   const { refreshUserData, user } = useAuth();
 
+  // Safely parse JSON, tolerate empty or non-JSON responses
+  const safeParseJson = async (res) => {
+    try {
+      const ct = res.headers?.get?.('content-type') || '';
+      if (ct.includes('application/json')) {
+        return await res.json();
+      }
+      const text = await res.text();
+      try { return JSON.parse(text); } catch { return { success: false, message: text || 'Unexpected response' }; }
+    } catch (e) {
+      return null;
+    }
+  };
+
   useEffect(() => {
     if (!open) {
       setProvider(initialProvider);
@@ -49,8 +63,12 @@ export default function TopUpModal({ open, onClose, initialCredits = 10, initial
         },
         body: JSON.stringify({ credits: Number(credits), provider })
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.message || 'Failed to start top-up');
+      if (res.status === 401) {
+        addToast({ type: 'error', title: 'Sign in required', message: 'Please log in to add credits.' });
+        return;
+      }
+      const data = await safeParseJson(res);
+      if (!res.ok || !data?.success) throw new Error((data && data.message) || 'Failed to start top-up');
       setIntent(data.intent);
       setConfig(data.config);
     } catch (e) {
@@ -76,8 +94,12 @@ export default function TopUpModal({ open, onClose, initialCredits = 10, initial
         },
         body: JSON.stringify({ intentId: intent.id })
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.message || 'Failed to confirm top-up');
+      if (res.status === 401) {
+        addToast({ type: 'error', title: 'Sign in required', message: 'Please log in to confirm top-up.' });
+        return;
+      }
+      const data = await safeParseJson(res);
+      if (!res.ok || !data?.success) throw new Error((data && data.message) || 'Failed to confirm top-up');
       addToast({ type: 'success', title: 'Credits added', message: `+${data.creditsAdded} credits` });
       await refreshUserData();
       onClose?.();
