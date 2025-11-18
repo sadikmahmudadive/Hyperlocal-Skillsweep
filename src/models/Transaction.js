@@ -26,9 +26,23 @@ const transactionSchema = new mongoose.Schema({
     required: true,
     min: 0.5
   },
+  escrowAmount: {
+    type: Number,
+    default: 0
+  },
+  heldBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  audit: [
+    {
+      actor: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      action: String,
+      note: String,
+      ts: { type: Date, default: Date.now }
+    }
+  ],
+  idempotencyKey: String,
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'in-progress', 'completed', 'cancelled'],
+    enum: ['pending', 'confirmed', 'held', 'in-progress', 'completed', 'cancelled', 'disputed'],
     default: 'pending'
   },
   scheduledDate: Date,

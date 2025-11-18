@@ -119,6 +119,25 @@ const userSchema = new mongoose.Schema({
     default: 2,
     min: 0
   },
+  heldCredits: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  ledger: [
+    {
+      type: {
+        type: String,
+        enum: ['hold', 'release', 'refund', 'topup', 'spend'],
+        required: true
+      },
+      amount: { type: Number, required: true },
+      balanceAfter: { type: Number, required: true },
+      txRef: { type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' },
+      note: String,
+      createdAt: { type: Date, default: Date.now }
+    }
+  ],
   rating: {
     average: {
       type: Number,

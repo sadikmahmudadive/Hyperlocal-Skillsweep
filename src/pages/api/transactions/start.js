@@ -16,7 +16,7 @@ async function handler(req, res) {
       return res.status(400).json({ message: 'transactionId is required' });
     }
 
-    // Either party can start the service when status is confirmed
+    // Either party can start the service when status is confirmed and escrow is held
     const transaction = await Transaction.findOne({
       _id: transactionId,
       $or: [{ provider: userId }, { receiver: userId }],
@@ -27,7 +27,14 @@ async function handler(req, res) {
       return res.status(404).json({ message: 'Transaction not found or not in confirmed state' });
     }
 
+    // Ensure escrow is present
+    if (!transaction.escrowAmount || !transaction.heldBy) {
+      return res.status(400).json({ message: 'Escrow not present; cannot start transaction' });
+    }
+
     transaction.status = 'in-progress';
+    transaction.audit = transaction.audit || [];
+    transaction.audit.push({ actor: userId, action: 'start', note: 'Service started', ts: new Date() });
     await transaction.save();
 
     res.status(200).json({ message: 'Transaction started', transaction });
