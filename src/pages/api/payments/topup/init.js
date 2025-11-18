@@ -1,14 +1,20 @@
 import dbConnect from '../../../../lib/dbConnect';
 import TopUpIntent from '../../../../models/TopUpIntent';
 import User from '../../../../models/User';
-import { validateJwt } from '../../../../middleware/auth';
+import { requireAuth } from '../../../../middleware/auth';
 import payments from '../../../../lib/payments';
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ success: false, message: 'Method not allowed' });
+async function handler(req, res) {
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Allow', 'POST, OPTIONS');
+    return res.status(200).end();
+  }
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST, OPTIONS');
+    return res.status(405).json({ success: false, message: 'Method not allowed' });
+  }
+
   await dbConnect();
-  const auth = await validateJwt(req, res);
-  if (!auth) return; // middleware already responded
 
   try {
     const { credits, provider } = req.body;
@@ -16,7 +22,7 @@ export default async function handler(req, res) {
     if (error) return res.status(400).json({ success: false, message: error });
     if (!payments.supportedProvider(provider)) return res.status(400).json({ success: false, message: 'Unsupported provider' });
 
-    const user = await User.findById(auth.userId);
+    const user = await User.findById(req.userId);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
     const idempotencyKey = payments.createIdempotencyKey(user._id.toString(), credits, provider);
@@ -51,3 +57,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, message: 'Internal error' });
   }
 }
+
+export default requireAuth(handler);
