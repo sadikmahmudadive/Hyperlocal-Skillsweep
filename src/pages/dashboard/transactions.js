@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth, useRequireAuth } from '../../contexts/AuthContext';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 import { useToast } from '../../contexts/ToastContext';
 import { Skeleton } from '../../components/ui/Skeleton';
 import Modal from '../../components/ui/Modal';
@@ -21,6 +22,8 @@ export default function Transactions() {
   const { addToast } = useToast();
   
   useRequireAuth();
+  // Auto refresh transactions every 60s
+  useAutoRefresh(60000);
 
   useEffect(() => {
     fetchTransactions();

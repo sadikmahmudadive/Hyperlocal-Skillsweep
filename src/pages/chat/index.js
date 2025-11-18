@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth, useRequireAuth } from '../../contexts/AuthContext';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 import ChatWindow from '../../components/chat/ChatWindow';
 
 function HoverRatingRow({ user, ratingCache, setRatingCache }) {
@@ -79,6 +80,9 @@ export default function ChatPage() {
     fetchConversations();
     fetchUnread();
   }, []);
+
+  // Fallback periodic refresh (e.g. if SSE drops) every 120s
+  useAutoRefresh(120000);
 
   // SSE: refresh conversations/messages and unread counts in near-realtime
   useEffect(() => {

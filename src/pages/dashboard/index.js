@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 
 import { useAuth, useRequireAuth } from '../../contexts/AuthContext';
+import useAutoRefresh from '../../hooks/useAutoRefresh';
 import { useToast } from '../../contexts/ToastContext';
 import PageHeader from '../../components/ui/PageHeader';
 import MetricCard from '../../components/ui/MetricCard';
@@ -30,6 +31,9 @@ export default function Dashboard() {
   const router = useRouter();
   useRequireAuth();
   const { addToast } = useToast();
+
+  // Auto refresh dashboard data every 90s (shallow)
+  useAutoRefresh(90000);
 
   useEffect(() => {
     if (user) {
