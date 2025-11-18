@@ -73,6 +73,19 @@ async function handler(req, res) {
       await session.commitTransaction();
       session.endSession();
 
+      // Optionally anchor to blockchain for immutable audit trail
+      try {
+        if (process.env.ENABLE_CHAIN === 'true') {
+          const { anchorTransactionProof } = require('../../../lib/blockchain');
+          // fire-and-forget but capture errors
+          anchorTransactionProof(transaction).then(r => {
+            if (!r.ok) console.warn('Anchor failed:', r.reason);
+          }).catch(e => console.error('Anchor exception:', e));
+        }
+      } catch (e) {
+        console.error('Anchor attempt error:', e);
+      }
+
       res.status(200).json({ message: 'Transaction completed successfully', transaction });
     } catch (err) {
       await session.abortTransaction();

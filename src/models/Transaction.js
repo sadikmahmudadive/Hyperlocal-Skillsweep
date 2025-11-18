@@ -45,6 +45,11 @@ const transactionSchema = new mongoose.Schema({
     enum: ['pending', 'confirmed', 'held', 'in-progress', 'completed', 'cancelled', 'disputed'],
     default: 'pending'
   },
+  // Blockchain anchoring (optional)
+  chainName: { type: String },
+  onChainTxHash: { type: String },
+  onChainProof: { type: String },
+  anchoredAt: { type: Date }
   scheduledDate: Date,
   completedDate: Date,
   providerRating: Number,
