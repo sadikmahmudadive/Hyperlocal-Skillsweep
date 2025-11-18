@@ -1,6 +1,7 @@
 import dbConnect from '../../../lib/dbConnect';
 import Transaction from '../../../models/Transaction';
 import User from '../../../models/User';
+import paymentConfig, { creditsToFiat } from '../../../../config/payments';
 import { requireAuth } from '../../../middleware/auth';
 
 async function handler(req, res) {
@@ -15,8 +16,17 @@ async function handler(req, res) {
 
     // Check if receiver has enough credits
     const receiver = await User.findById(userId);
-    if (receiver.credits < credits) {
-      return res.status(400).json({ message: 'Insufficient credits' });
+    if ((receiver.credits || 0) < credits) {
+      const missingCredits = Math.max(0, credits - (receiver.credits || 0));
+      const amountFiat = creditsToFiat(missingCredits);
+      return res.status(400).json({
+        code: 'INSUFFICIENT_CREDITS',
+        message: 'Insufficient credits',
+        missingCredits,
+        amountFiat,
+        currency: paymentConfig.currency,
+        creditRate: paymentConfig.creditRate
+      });
     }
 
     // Create transaction

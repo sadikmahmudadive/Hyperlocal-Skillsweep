@@ -219,7 +219,12 @@ export default function UserProfile() {
         setHireOpen(false);
         router.push('/dashboard/transactions?status=pending');
       } else {
-        addToast({ type: 'error', title: 'Hire failed', message: data?.message || 'Could not create request' });
+        if (data?.code === 'INSUFFICIENT_CREDITS') {
+          addToast({ type: 'warning', title: 'Add credits', message: `You need ${data.missingCredits} more credits (~${data.amountFiat} ${data.currency}).` });
+          router.push(`/dashboard?topup=1&need=${encodeURIComponent(data.missingCredits)}`);
+        } else {
+          addToast({ type: 'error', title: 'Hire failed', message: data?.message || 'Could not create request' });
+        }
       }
     } catch (e) {
       console.error('Hire error', e);

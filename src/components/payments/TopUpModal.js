@@ -10,9 +10,9 @@ const PROVIDERS = [
   { id: 'bank', label: 'Bank (manual)' },
 ];
 
-export default function TopUpModal({ open, onClose }) {
-  const [provider, setProvider] = useState('bkash');
-  const [credits, setCredits] = useState(10);
+export default function TopUpModal({ open, onClose, initialCredits = 10, initialProvider = 'bkash' }) {
+  const [provider, setProvider] = useState(initialProvider);
+  const [credits, setCredits] = useState(initialCredits);
   const [loading, setLoading] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [intent, setIntent] = useState(null);
@@ -22,14 +22,14 @@ export default function TopUpModal({ open, onClose }) {
 
   useEffect(() => {
     if (!open) {
-      setProvider('bkash');
-      setCredits(10);
+      setProvider(initialProvider);
+      setCredits(initialCredits);
       setLoading(false);
       setConfirming(false);
       setIntent(null);
       setConfig(null);
     }
-  }, [open]);
+  }, [open, initialCredits, initialProvider]);
 
   const currency = config?.currency || 'BDT';
 

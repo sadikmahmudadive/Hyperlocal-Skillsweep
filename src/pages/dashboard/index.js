@@ -37,6 +37,14 @@ export default function Dashboard() {
   // Auto refresh dashboard data every 90s (shallow)
   useAutoRefresh(90000);
 
+  // Open TopUp modal if navigated with a query (?topup=1&need=10)
+  useEffect(() => {
+    if (!router.isReady) return;
+    if (router.query.topup) {
+      setTopUpOpen(true);
+    }
+  }, [router.isReady, router.query.topup]);
+
   useEffect(() => {
     if (user) {
       updateStats();
@@ -305,7 +313,11 @@ export default function Dashboard() {
         ))}
       </section>
 
-      <TopUpModal open={topUpOpen} onClose={() => setTopUpOpen(false)} />
+      <TopUpModal
+        open={topUpOpen}
+        onClose={() => setTopUpOpen(false)}
+        initialCredits={Number(router.query.need) || 10}
+      />
 
       <section className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
         {quickActions.map((action) => (
