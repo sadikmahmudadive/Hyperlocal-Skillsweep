@@ -9,7 +9,8 @@
     "lint": "next lint",
     "slides:serve": "marp --theme-set ./docs/theme/skillswap-theme.css --html --server ./docs/slides",
     "slides:pptx": "marp --theme-set ./docs/theme/skillswap-theme.css --pptx -o ./docs/out/subjects-deck.pptx ./docs/slides/subjects-deck.marp.md",
-    "slides:pdf": "marp --theme-set ./docs/theme/skillswap-theme.css --pdf -o ./docs/out/subjects-deck.pdf ./docs/slides/subjects-deck.marp.md"
+    "slides:pdf": "marp --theme-set ./docs/theme/skillswap-theme.css --pdf -o ./docs/out/subjects-deck.pdf ./docs/slides/subjects-deck.marp.md",
+    "demo:tx": "node scripts/demo-transaction.js"
   },
   "dependencies": {
     "next": "13.5.6",

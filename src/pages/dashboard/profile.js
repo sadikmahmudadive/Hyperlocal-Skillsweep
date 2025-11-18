@@ -25,6 +25,8 @@ export default function EditProfile() {
   const [message, setMessage] = useState('');
   const [uploadProgress, setUploadProgress] = useState(0);
   const [fieldErrors, setFieldErrors] = useState({});
+  const [locLoading, setLocLoading] = useState(false);
+  const [coords, setCoords] = useState(null); // { lat, lng }
   const fileInputRef = useRef(null);
   
   const router = useRouter();
@@ -40,6 +42,9 @@ export default function EditProfile() {
         maxDistance: user.preferences?.maxDistance || 10
       });
       setAvatarPreview(user.avatar?.url || '');
+      if (user.location?.coordinates && Array.isArray(user.location.coordinates) && user.location.coordinates.length === 2) {
+        setCoords({ lat: user.location.coordinates[1], lng: user.location.coordinates[0] });
+      }
     }
   }, [user]);
 
@@ -108,6 +113,46 @@ export default function EditProfile() {
     const reader = new FileReader();
     reader.onload = (ev) => setAvatarPreview(ev.target.result);
     reader.readAsDataURL(file);
+  };
+
+  const useMyLocation = async () => {
+    if (!('geolocation' in navigator)) {
+      addToast({ type: 'error', title: 'Location not available', message: 'Your browser does not support geolocation.' });
+      return;
+    }
+    setLocLoading(true);
+    setMessage('Detecting your location…');
+    try {
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 12000,
+          maximumAge: 0
+        });
+      });
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      setCoords({ lat, lng });
+
+      const resp = await fetch(`/api/geocode/reverse?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`);
+      if (resp.ok) {
+        const data = await resp.json();
+        const place = data?.place_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        setFormData(prev => ({ ...prev, address: place }));
+        addToast({ type: 'success', title: 'Location set', message: 'We detected your current location.' });
+        setMessage('Location detected and address filled.');
+      } else {
+        setFormData(prev => ({ ...prev, address: `${lat.toFixed(5)}, ${lng.toFixed(5)}` }));
+        addToast({ type: 'warning', title: 'Location set (no address)', message: 'Coordinates set but reverse geocoding failed.' });
+      }
+    } catch (err) {
+      console.error('Geolocation error:', err);
+      const reason = err?.message || 'Unable to access GPS';
+      addToast({ type: 'error', title: 'Location permission', message: reason });
+      setMessage(`Could not get location: ${reason}`);
+    } finally {
+      setLocLoading(false);
+    }
   };
 
   // Resize large images to max 800x800 before encoding to reduce upload time
@@ -248,6 +293,14 @@ export default function EditProfile() {
           notifications: user.preferences?.notifications || { email: true, push: true }
         }
       };
+
+      if (coords) {
+        updateData.location = {
+          type: 'Point',
+          coordinates: [coords.lng, coords.lat],
+          address: updateData.address
+        };
+      }
 
       // Only include avatar if we have a new URL
       if (avatarUrl && avatarUrl !== user.avatar?.url) {
@@ -469,6 +522,16 @@ export default function EditProfile() {
               aria-describedby={fieldErrors.address ? 'address-error' : undefined}
             />
             {fieldErrors.address && <div id="address-error" className="text-xs text-rose-600">{fieldErrors.address}</div>}
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <Button type="button" variant="secondary" size="sm" onClick={useMyLocation} disabled={locLoading}>
+                {locLoading ? 'Detecting…' : 'Use my current location'}
+              </Button>
+              {coords && (
+                <span className="text-xs text-slate-500 dark:text-slate-300">
+                  {`Lat ${coords.lat.toFixed(5)}, Lng ${coords.lng.toFixed(5)}`}
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">
