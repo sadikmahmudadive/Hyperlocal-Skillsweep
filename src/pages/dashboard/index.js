@@ -12,9 +12,11 @@ import GradientPill from '../../components/ui/GradientPill';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { Button } from '../../components/ui/Button';
+import TopUpModal from '../../components/payments/TopUpModal';
 
 export default function Dashboard() {
   const { user, loading } = useAuth();
+  const [topUpOpen, setTopUpOpen] = useState(false);
   const [stats, setStats] = useState({
     skillsOffered: 0,
     skillsNeeded: 0,
@@ -272,6 +274,14 @@ export default function Dashboard() {
               <span className="text-[11px] text-slate-400">⏱️</span>
             </GradientPill>
             <Button
+              type="button"
+              variant="secondary"
+              className="px-5 py-2 text-sm font-semibold"
+              onClick={() => setTopUpOpen(true)}
+            >
+              Add credits
+            </Button>
+            <Button
               href="/dashboard/profile"
               variant="secondary"
               className="px-5 py-2 text-sm font-semibold"
@@ -294,6 +304,8 @@ export default function Dashboard() {
           </button>
         ))}
       </section>
+
+      <TopUpModal open={topUpOpen} onClose={() => setTopUpOpen(false)} />
 
       <section className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
         {quickActions.map((action) => (
