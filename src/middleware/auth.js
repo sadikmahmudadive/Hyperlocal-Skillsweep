@@ -1,14 +1,23 @@
 import { verifyToken } from '../lib/auth';
-import cookie from 'cookie';
+
+function getCookie(req, name) {
+  const header = req.headers?.cookie || '';
+  if (!header) return null;
+  const parts = header.split(';');
+  for (const part of parts) {
+    const [k, ...rest] = part.trim().split('=');
+    if (k === name) {
+      return decodeURIComponent(rest.join('='));
+    }
+  }
+  return null;
+}
 
 export const requireAuth = (handler) => {
   return async (req, res) => {
     let token = req.headers.authorization?.replace('Bearer ', '');
-    if (!token && req.headers.cookie) {
-      try {
-        const parsed = cookie.parse(req.headers.cookie || '');
-        token = parsed.sseso || null;
-      } catch {}
+    if (!token) {
+      token = getCookie(req, 'sseso');
     }
     
     if (!token) {
