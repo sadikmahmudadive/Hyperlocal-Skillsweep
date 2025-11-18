@@ -1,7 +1,7 @@
-import dbConnect from '../../../../lib/dbConnect';
-import Transaction from '../../../../models/Transaction';
-import { requireAuth } from '../../../../middleware/auth';
-import { anchorTransactionProof } from '../../../../lib/blockchain';
+import dbConnect from '../../../lib/dbConnect';
+import Transaction from '../../../models/Transaction';
+import { requireAuth } from '../../../middleware/auth';
+import { anchorTransactionProof } from '../../../lib/blockchain';
 
 async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });

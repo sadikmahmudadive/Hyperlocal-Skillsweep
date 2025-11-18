@@ -49,9 +49,9 @@ const transactionSchema = new mongoose.Schema({
   chainName: { type: String },
   onChainTxHash: { type: String },
   onChainProof: { type: String },
-  anchoredAt: { type: Date }
-  scheduledDate: Date,
-  completedDate: Date,
+  anchoredAt: { type: Date },
+  scheduledDate: { type: Date },
+  completedDate: { type: Date },
   providerRating: Number,
   receiverRating: Number,
   providerReview: String,
