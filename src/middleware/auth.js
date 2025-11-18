@@ -15,6 +15,10 @@ function getCookie(req, name) {
 
 export const requireAuth = (handler) => {
   return async (req, res) => {
+    // Allow preflight requests through without auth so handlers can respond.
+    if (req.method === 'OPTIONS') {
+      return handler(req, res);
+    }
     let token = req.headers.authorization?.replace('Bearer ', '');
     if (!token) {
       token = getCookie(req, 'sseso');
