@@ -55,7 +55,7 @@ export default function TopUpModal({ open, onClose, initialCredits = 10, initial
     try {
       setLoading(true);
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const res = await fetch('/api/payments/topup/init', {
+      let res = await fetch('/api/payments/topup/init', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -63,6 +63,14 @@ export default function TopUpModal({ open, onClose, initialCredits = 10, initial
         },
         body: JSON.stringify({ credits: Number(credits), provider })
       });
+      // Fallback: some hosts mis-handle POST on API routes; retry GET
+      if (res.status === 405) {
+        const qs = new URLSearchParams({ provider, credits: String(Number(credits) || 0) }).toString();
+        res = await fetch(`/api/payments/topup/init?${qs}`, {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      }
       if (res.status === 401) {
         addToast({ type: 'error', title: 'Sign in required', message: 'Please log in to add credits.' });
         return;
