@@ -15,6 +15,16 @@ async function handler(req, res) {
     const { providerId, skill, duration, credits = 0, scheduledDate, price = 0 } = req.body;
 
     const receiver = await User.findById(userId);
+    const provider = await User.findById(providerId);
+
+    if (!provider) {
+      return res.status(404).json({ message: 'Provider not found' });
+    }
+
+    if (provider.isAvailable === false) {
+      return res.status(400).json({ message: 'Provider is currently not available for hire' });
+    }
+
     const userCredits = receiver.credits || 0;
 
     // Validate credit balance

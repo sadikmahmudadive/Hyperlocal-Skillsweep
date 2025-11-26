@@ -310,10 +310,10 @@ export default function UserProfile() {
                 </button>
                 <button
                   onClick={() => openHire(hirePrefill)}
-                  disabled={submittingHire}
-                  className="px-6 py-2 rounded-md border border-green-600 text-green-700 hover:bg-green-50 disabled:opacity-50"
+                  disabled={submittingHire || user.isAvailable === false}
+                  className={`px-6 py-2 rounded-md border ${user.isAvailable === false ? 'border-gray-300 text-gray-400 cursor-not-allowed' : 'border-green-600 text-green-700 hover:bg-green-50'} disabled:opacity-50`}
                 >
-                  Hire
+                  {user.isAvailable === false ? 'Unavailable' : 'Hire'}
                 </button>
               </div>
             )}
@@ -343,9 +343,10 @@ export default function UserProfile() {
                     {currentUser && currentUser.id !== user._id && (
                       <button
                         onClick={() => { setHirePrefill(skill); setHireOpen(true); }}
-                        className="btn-primary text-sm"
+                        disabled={user.isAvailable === false}
+                        className={`btn-primary text-sm ${user.isAvailable === false ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
-                        Hire for this skill
+                        {user.isAvailable === false ? 'Unavailable' : 'Hire for this skill'}
                       </button>
                     )}
                   </div>

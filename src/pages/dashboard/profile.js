@@ -15,7 +15,8 @@ export default function EditProfile() {
     name: '',
     bio: '',
     address: '',
-    maxDistance: 10
+    maxDistance: 10,
+    isAvailable: true
   });
   const [avatar, setAvatar] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState('');
@@ -39,7 +40,8 @@ export default function EditProfile() {
         name: user.name || '',
         bio: user.bio || '',
         address: user.address || '',
-        maxDistance: user.preferences?.maxDistance || 10
+        maxDistance: user.preferences?.maxDistance || 10,
+        isAvailable: user.isAvailable !== false // default to true if undefined
       });
       setAvatarPreview(user.avatar?.url || '');
       if (user.location?.coordinates && Array.isArray(user.location.coordinates) && user.location.coordinates.length === 2) {
@@ -288,6 +290,7 @@ export default function EditProfile() {
         name: formData.name.trim(),
         bio: formData.bio.trim(),
         address: formData.address.trim(),
+        isAvailable: formData.isAvailable,
         preferences: {
           maxDistance: parseInt(formData.maxDistance),
           notifications: user.preferences?.notifications || { email: true, push: true }
@@ -552,6 +555,29 @@ export default function EditProfile() {
               aria-describedby={fieldErrors.maxDistance ? 'maxDistance-error' : undefined}
             />
             {fieldErrors.maxDistance && <div id="maxDistance-error" className="text-xs text-rose-600">{fieldErrors.maxDistance}</div>}
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300">
+              Availability Status
+            </label>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, isAvailable: !prev.isAvailable }))}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${formData.isAvailable ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.isAvailable ? 'translate-x-6' : 'translate-x-1'}`}
+                />
+              </button>
+              <span className="text-sm text-slate-700 dark:text-slate-200">
+                {formData.isAvailable ? 'Active (Available for hire)' : 'Inactive (Not available)'}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Turn this off to hide your profile from search results and prevent new hire requests.
+            </p>
           </div>
         </section>
 

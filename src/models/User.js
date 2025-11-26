@@ -155,6 +155,10 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  isAvailable: {
+    type: Boolean,
+    default: true
+  },
   preferences: {
     maxDistance: {
       type: Number,

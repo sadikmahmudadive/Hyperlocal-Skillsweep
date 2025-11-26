@@ -17,7 +17,9 @@ export default async function handler(req, res) {
 
     const { query, category, distance = 10, lat, lng } = req.query;
 
-    let searchFilter = {};
+    let searchFilter = {
+      isAvailable: { $ne: false } // Default to true if undefined
+    };
     
     // Text search
     if (query) {
