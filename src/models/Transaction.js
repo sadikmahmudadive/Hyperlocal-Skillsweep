@@ -21,11 +21,19 @@ const transactionSchema = new mongoose.Schema({
     required: true,
     min: 0.5
   },
+  // Legacy: pure credit swap cost.
+  // New: points used for discount.
   credits: {
     type: Number,
-    required: true,
-    min: 0.5
+    default: 0,
+    min: 0
   },
+  // Money fields
+  amount: { type: Number, default: 0 }, // Base price
+  currency: { type: String, default: 'BDT' },
+  discount: { type: Number, default: 0 }, // Fiat amount saved
+  finalAmount: { type: Number, default: 0 }, // amount - discount
+  
   escrowAmount: {
     type: Number,
     default: 0

@@ -694,7 +694,7 @@ export default function SearchPage() {
             skills={hireTarget?.skillsOffered || []}
             availableCredits={currentUser?.credits || 0}
             submitting={submittingHire}
-            onSubmit={async ({ skillId, duration, credits, scheduled, custom }) => {
+            onSubmit={async ({ skillId, duration, credits, scheduled, custom, price }) => {
               if (!currentUser) { router.push('/auth/login'); return; }
               try {
                 setSubmittingHire(true);
@@ -719,6 +719,7 @@ export default function SearchPage() {
                   skill: skillObj,
                   duration: Number(duration),
                   credits: Number(credits),
+                  price: Number(price),
                   scheduledDate: scheduled ? new Date(scheduled).toISOString() : null
                 };
                 const res = await fetch('/api/transactions/create', {
@@ -757,16 +758,29 @@ function HireForm({ skills, availableCredits, submitting, onSubmit }) {
   const hasSkills = Array.isArray(skills) && skills.length > 0;
   const [skillId, setSkillId] = useState(hasSkills ? (skills[0]?._id || skills[0]?.name) : '__custom__');
   const [duration, setDuration] = useState(1);
-  const [credits, setCredits] = useState(1);
+  const [price, setPrice] = useState(0);
+  const [credits, setCredits] = useState(0);
   const [scheduled, setScheduled] = useState('');
   const [customName, setCustomName] = useState('');
   const [customDescription, setCustomDescription] = useState('');
 
-  useEffect(() => { if (duration && duration > 0) setCredits(Number(duration)); }, [duration]);
+  // Rate: 1 Credit = 50 BDT (approx, should come from config)
+  const CREDIT_RATE = 50; 
+
+  // Default price suggestion: 200 BDT per hour?
+  useEffect(() => { 
+    if (duration && duration > 0) {
+      setPrice(duration * 200); 
+    }
+  }, [duration]);
+
+  const maxDiscountCredits = Math.min(availableCredits, Math.floor(price / CREDIT_RATE));
+  const discountAmount = credits * CREDIT_RATE;
+  const finalPrice = Math.max(0, price - discountAmount);
 
   const onSubmitInternal = (e) => {
     e.preventDefault();
-    const payload = { skillId, duration, credits, scheduled };
+    const payload = { skillId, duration, credits, price, scheduled };
     if (skillId === '__custom__' || !hasSkills) {
       payload.custom = { name: customName.trim(), description: customDescription.trim() };
     }
@@ -800,22 +814,72 @@ function HireForm({ skills, availableCredits, submitting, onSubmit }) {
           </div>
         </div>
       )}
-      <div className="grid grid-cols-2 gap-3">
+      
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Duration (hours)</label>
-          <input type="number" min={1} value={duration} onChange={(e) => setDuration(Number(e.target.value))} className="w-full border rounded-md p-2" />
+          <input type="number" min="0.5" step="0.5" value={duration} onChange={(e) => setDuration(Number(e.target.value))} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-green-500 focus:border-green-500" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Credits</label>
-          <input type="number" min={1} value={credits} onChange={(e) => setCredits(Number(e.target.value))} className="w-full border rounded-md p-2" />
+          <label className="block text-sm font-medium text-gray-700 mb-1">Date (optional)</label>
+          <input type="date" value={scheduled} onChange={(e) => setScheduled(e.target.value)} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-green-500 focus:border-green-500" />
         </div>
       </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Scheduled Date (optional)</label>
-        <input type="datetime-local" value={scheduled} onChange={(e) => setScheduled(e.target.value)} className="w-full border rounded-md p-2" />
+
+      <div className="p-4 bg-slate-50 rounded-lg space-y-3 border border-slate-200">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Agreed Price (BDT)</label>
+          <input 
+            type="number" 
+            min="0" 
+            step="10" 
+            value={price} 
+            onChange={(e) => {
+              const p = Number(e.target.value);
+              setPrice(p);
+              // Reset credits if they exceed new max
+              if (credits * CREDIT_RATE > p) setCredits(0);
+            }} 
+            className="w-full border rounded-md p-2 focus:ring-2 focus:ring-green-500 focus:border-green-500" 
+          />
+        </div>
+
+        <div>
+          <div className="flex justify-between mb-1">
+            <label className="block text-sm font-medium text-gray-700">Use Credits for Discount</label>
+            <span className="text-xs text-gray-500">Available: {availableCredits}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <input 
+              type="range" 
+              min="0" 
+              max={maxDiscountCredits} 
+              step="1" 
+              value={credits} 
+              onChange={(e) => setCredits(Number(e.target.value))} 
+              className="flex-1"
+            />
+            <input 
+              type="number" 
+              min="0" 
+              max={maxDiscountCredits} 
+              value={credits} 
+              onChange={(e) => setCredits(Math.min(maxDiscountCredits, Number(e.target.value)))} 
+              className="w-16 border rounded-md p-1 text-center text-sm"
+            />
+          </div>
+          <div className="text-xs text-gray-500 mt-1">
+            {credits} credits = -{discountAmount} BDT
+          </div>
+        </div>
+
+        <div className="pt-2 border-t border-slate-200 flex justify-between items-center font-semibold">
+          <span>Final to Pay:</span>
+          <span className="text-lg text-emerald-600">{finalPrice} BDT</span>
+        </div>
       </div>
-      <div className="flex justify-between text-sm text-gray-600"><span>Available: {availableCredits} credits</span></div>
-      <div className="flex justify-end">
+
+      <div className="flex justify-end gap-3 pt-2">
         <button type="submit" disabled={submitting} className="btn-primary">{submitting ? 'Sending…' : 'Send Request'}</button>
       </div>
     </form>

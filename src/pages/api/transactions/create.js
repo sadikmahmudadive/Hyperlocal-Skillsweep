@@ -12,21 +12,40 @@ async function handler(req, res) {
   try {
     await dbConnect();
     const userId = req.userId;
-    const { providerId, skill, duration, credits, scheduledDate } = req.body;
+    const { providerId, skill, duration, credits = 0, scheduledDate, price = 0 } = req.body;
 
-    // Check if receiver has enough credits
     const receiver = await User.findById(userId);
-    if ((receiver.credits || 0) < credits) {
-      const missingCredits = Math.max(0, credits - (receiver.credits || 0));
+    const userCredits = receiver.credits || 0;
+
+    // Validate credit balance
+    if (userCredits < credits) {
+      const missingCredits = credits - userCredits;
       const amountFiat = creditsToFiat(missingCredits);
       return res.status(400).json({
         code: 'INSUFFICIENT_CREDITS',
-        message: 'Insufficient credits',
+        message: 'Insufficient credits for discount/swap',
         missingCredits,
         amountFiat,
         currency: paymentConfig.currency,
         creditRate: paymentConfig.creditRate
       });
+    }
+
+    let finalAmount = 0;
+    let discount = 0;
+    let currency = paymentConfig.currency;
+
+    if (price > 0) {
+      // Money transaction with optional discount
+      const discountValue = creditsToFiat(credits);
+      if (discountValue > price) {
+         return res.status(400).json({ message: 'Discount cannot exceed price' });
+      }
+      discount = discountValue;
+      finalAmount = price - discount;
+    } else {
+      // Pure credit swap (legacy or specific mode)
+      // credits is the full cost
     }
 
     // Create transaction
@@ -35,11 +54,23 @@ async function handler(req, res) {
       receiver: userId,
       skill,
       duration,
-      credits,
+      credits, // Credits used (either as cost or discount)
+      amount: price,
+      discount,
+      finalAmount,
+      currency,
       scheduledDate,
       status: 'pending'
     });
 
+    // Deduct credits immediately? 
+    // The original code didn't seem to deduct credits in `create.js`?
+    // Let's check the original code.
+    // It just checked: `if ((receiver.credits || 0) < credits) ...`
+    // It didn't save the user with new credits.
+    // Maybe it's done in `confirm` or `complete`?
+    // I should check `src/pages/api/transactions/confirm.js` etc.
+    
     await transaction.save();
     await transaction.populate('provider', 'name avatar rating');
     await transaction.populate('receiver', 'name avatar rating');

@@ -359,15 +359,33 @@ export default function Transactions() {
                             }
                           </p>
                           <p className="text-sm text-gray-500 dark:text-slate-400">
-                            Duration: {transaction.duration}h • Credits: {transaction.credits}⏱️
+                            Duration: {transaction.duration}h
+                            {transaction.amount > 0 && ` • Price: ${transaction.amount} ${transaction.currency || 'BDT'}`}
+                            {transaction.discount > 0 && ` • Discount: -${transaction.discount} ${transaction.currency || 'BDT'}`}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
                         {getActionButtons(transaction)}
-                        <span className="text-lg font-semibold text-green-600">
-                          {transaction.credits}⏱️
-                        </span>
+                        <div className="text-right">
+                          {transaction.amount > 0 ? (
+                            <>
+                              <span className="block text-lg font-semibold text-green-600">
+                                {transaction.finalAmount} {transaction.currency || 'BDT'}
+                              </span>
+                              {transaction.discount > 0 && (
+                                <span className="block text-xs text-gray-500">
+                                  <span className="line-through">{transaction.amount}</span>
+                                  <span className="ml-1 text-green-600">(-{transaction.credits}⏱️)</span>
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-lg font-semibold text-green-600">
+                              {transaction.credits}⏱️
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     {transaction.scheduledDate && (

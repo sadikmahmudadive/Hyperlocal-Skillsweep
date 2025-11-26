@@ -432,7 +432,10 @@ export default function Dashboard() {
                           </div>
                           <div className="flex items-center gap-3">
                             <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
-                              {transaction.credits} credits
+                              {transaction.amount > 0 
+                                ? `${transaction.finalAmount} ${transaction.currency || 'BDT'}`
+                                : `${transaction.credits} credits`
+                              }
                             </span>
                             <Button
                               type="button"
