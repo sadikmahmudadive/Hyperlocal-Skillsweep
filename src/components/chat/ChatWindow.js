@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import Link from 'next/link';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -23,11 +24,16 @@ export default function ChatWindow({ conversation, onClose }) {
   const [searchingUnread, setSearchingUnread] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const textareaRef = useRef(null);
+  const [showDetails, setShowDetails] = useState(false);
   
   const messageRefs = useRef({});
   const setMsgRef = (id, el) => {
     if (!id) return;
     messageRefs.current[id] = el || undefined;
+  };
+
+  const handleUnavailableAction = (feature) => {
+    addToast({ type: 'info', title: `${feature} coming soon`, message: 'We are working on this feature.' });
   };
 
   const scrollToBottom = (smooth = true) => {
@@ -287,6 +293,25 @@ export default function ChatWindow({ conversation, onClose }) {
   };
 
   const otherParticipant = conversation?.participants?.find(p => p._id !== user.id);
+
+  const quickReplies = useMemo(() => {
+    const skill = conversation?.skillTopic;
+    const base = [
+      'Sounds great! 👍',
+      'Can we schedule a quick call?',
+      'Let me check and get back to you.',
+      'Thanks for the update!'
+    ];
+    if (skill) {
+      base.unshift(`Can we talk about ${skill}?`);
+      base.unshift(`When are you free to practice ${skill}?`);
+    }
+    return Array.from(new Set(base)).slice(0, 4);
+  }, [conversation?.skillTopic]);
+
+  const handleQuickReply = (text) => {
+    sendInternal(text, 'text');
+  };
   
   const isOnline = (u) => {
     if (!u?.lastActive) return false;
@@ -341,7 +366,8 @@ export default function ChatWindow({ conversation, onClose }) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-slate-900 rounded-2xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-800">
+    <div className="relative h-full">
+      <div className="relative flex flex-col h-full bg-white dark:bg-slate-900 rounded-2xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-800">
       {/* Chat Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm z-10">
         <div className="flex items-center space-x-4">
@@ -373,6 +399,30 @@ export default function ChatWindow({ conversation, onClose }) {
               {searchingUnread ? 'Searching…' : 'Jump to unread'}
             </button>
           )}
+          <button
+            onClick={() => handleUnavailableAction('Voice calls')}
+            className="p-2 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors hidden sm:inline-flex"
+            aria-label="Start voice call"
+            title="Voice call"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M15 5l5 5-7.5 7.5a3 3 0 01-4.243 0L3 11.243 10.5 3.75 15 8.25" /></svg>
+          </button>
+          <button
+            onClick={() => handleUnavailableAction('Video calls')}
+            className="p-2 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors hidden sm:inline-flex"
+            aria-label="Start video call"
+            title="Video call"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14m-9 4h9a2 2 0 002-2V8a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+          </button>
+          <button
+            onClick={() => setShowDetails(prev => !prev)}
+            className={`p-2 rounded-full transition-colors ${showDetails ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200'}`}
+            aria-label="Show chat details"
+            title="Chat details"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M13 16h-1v-4h-1m1-4h.01M12 22a10 10 0 110-20 10 10 0 010 20z" /></svg>
+          </button>
           <button 
             onClick={onClose} 
             className="p-2 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
@@ -459,6 +509,19 @@ export default function ChatWindow({ conversation, onClose }) {
                     ) : (
                       message.content
                     )}
+                    <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 flex gap-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all">
+                      {['👍','❤️','🎉'].map(emoji => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleQuickReply(emoji); }}
+                          className={`w-7 h-7 rounded-full text-base shadow-lg bg-white/90 dark:bg-slate-800/90 hover:-translate-y-0.5 transition-transform ${isMe ? 'text-emerald-500' : 'text-slate-600'}`}
+                          title={`React with ${emoji}`}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
                     <div className={`text-[10px] mt-1 flex items-center justify-end gap-1 opacity-70 ${isMe && message.type !== 'image' ? 'text-emerald-100' : 'text-slate-400'}`}>
                       {new Date(message.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                       {isMe && (
@@ -515,6 +578,21 @@ export default function ChatWindow({ conversation, onClose }) {
             ))}
           </div>
         )}
+
+        {quickReplies.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-3">
+            {quickReplies.map(reply => (
+              <button
+                key={reply}
+                type="button"
+                onClick={() => handleQuickReply(reply)}
+                className="px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300 hover:border-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-300 transition-colors"
+              >
+                {reply}
+              </button>
+            ))}
+          </div>
+        )}
         
         <div className="flex items-end gap-2 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-3xl border border-slate-200 dark:border-slate-700 focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
           <button
@@ -564,6 +642,107 @@ export default function ChatWindow({ conversation, onClose }) {
           </button>
         </div>
       </form>
+      </div>
+
+      {showDetails && (
+        <button
+          type="button"
+          className="absolute inset-0 bg-slate-900/30 backdrop-blur-[1px] cursor-default z-10"
+          onClick={() => setShowDetails(false)}
+          aria-label="Close details overlay"
+        />
+      )}
+
+      {/* Details Drawer */}
+      <aside
+        className={`absolute top-0 right-0 h-full w-full sm:w-80 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-xl transform transition-transform duration-300 ${showDetails ? 'translate-x-0' : 'translate-x-full'} z-20`}
+      >
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Details</p>
+            <h4 className="font-semibold text-slate-900 dark:text-white">Conversation info</h4>
+          </div>
+          <button
+            onClick={() => setShowDetails(false)}
+            className="p-2 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+            aria-label="Close details"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div className="p-4 space-y-5 overflow-y-auto h-[calc(100%-64px)] custom-scrollbar">
+          <div className="flex items-center gap-3">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-xl font-bold">
+              {otherParticipant?.name?.charAt(0)}
+            </div>
+            <div>
+              <p className="font-semibold text-slate-900 dark:text-white">{otherParticipant?.name}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${otherParticipant?.isAvailable === false ? 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300' : (isOnline(otherParticipant) ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200' : 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200')}`}>
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: otherParticipant?.isAvailable === false ? '#94a3b8' : (isOnline(otherParticipant) ? '#10b981' : '#f59e0b') }}></span>
+                  {otherParticipant?.isAvailable === false ? 'Unavailable' : (isOnline(otherParticipant) ? 'Online now' : 'Away')}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          {conversation?.skillTopic && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Skill topic</p>
+              <div className="inline-flex items-center px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-sm text-slate-600 dark:text-slate-200">
+                {conversation.skillTopic}
+              </div>
+            </div>
+          )}
+
+          {otherParticipant?.bio && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">About</p>
+              <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{otherParticipant.bio}</p>
+            </div>
+          )}
+
+          {otherParticipant?.skills?.length > 0 && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Skills</p>
+              <div className="flex flex-wrap gap-2">
+                {otherParticipant.skills.slice(0, 6).map(skill => (
+                  <span key={skill.name || skill} className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-xs text-slate-600 dark:text-slate-300">
+                    {skill.name || skill}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Quick actions</p>
+            <button
+              onClick={() => handleQuickReply("Let's lock in a time? 😊")}
+              className="w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-slate-700 text-sm text-left hover:border-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-200 transition-colors"
+            >
+              Wave & schedule
+            </button>
+            {otherParticipant?._id && (
+              <Link href={`/profile/${otherParticipant._id}`} className="block w-full">
+                <span className="w-full inline-flex items-center justify-between px-3 py-2 rounded-2xl bg-slate-900 text-white text-sm hover:bg-slate-700">
+                  View public profile
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+                </span>
+              </Link>
+            )}
+          </div>
+
+          {conversation?.createdAt && (
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Chat started</p>
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                {new Date(conversation.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+              </p>
+            </div>
+          )}
+        </div>
+      </aside>
     </div>
   );
 }
