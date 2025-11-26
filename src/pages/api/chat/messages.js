@@ -53,7 +53,7 @@ async function handler(req, res) {
   } else if (req.method === 'POST') {
     try {
       await dbConnect();
-      const { conversationId, content } = req.body;
+      const { conversationId, content, type } = req.body;
       const userId = req.userId;
 
       const conversation = await Conversation.findOne({
@@ -68,7 +68,8 @@ async function handler(req, res) {
       const newMessage = {
         sender: userId,
         content,
-        read: false
+        read: false,
+        type: type || 'text'
       };
 
       conversation.messages.push(newMessage);

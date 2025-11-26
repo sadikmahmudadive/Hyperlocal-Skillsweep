@@ -18,7 +18,7 @@ const messageSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['text', 'system', 'transaction'],
+    enum: ['text', 'system', 'transaction', 'image'],
     default: 'text'
   }
 }, { timestamps: true });

@@ -202,20 +202,52 @@ export default function ChatWindow({ conversation, onClose }) {
     if (!silent) setLoading(false);
   };
 
-  const sendMessage = async (e) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !conversation) return;
+  const fileInputRef = useRef(null);
 
-    const messageContent = newMessage.trim();
-    setNewMessage('');
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      addToast({ type: 'error', title: 'File too large', message: 'Max 5MB allowed' });
+      return;
+    }
+    try {
+      setLoading(true);
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64 = reader.result;
+        // Upload to chat endpoint
+        const res = await fetch('/api/chat/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+          body: JSON.stringify({ image: base64 })
+        });
+        const data = await res.json();
+        if (res.ok) {
+           await sendInternal(data.url, 'image');
+        } else {
+           addToast({ type: 'error', title: 'Upload failed', message: data.message });
+        }
+        setLoading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error(error);
+      setLoading(false);
+      addToast({ type: 'error', title: 'Upload failed', message: 'Could not upload image' });
+    }
+  };
+
+  const sendInternal = async (content, type = 'text') => {
+    if (!conversation) return;
     const tempId = 'temp-' + Date.now();
     const optimistic = {
       _id: tempId,
       sender: { _id: user.id },
-      content: messageContent,
+      content: content,
       createdAt: new Date().toISOString(),
       read: false,
-      type: 'text'
+      type: type
     };
     setMessages(prev => [...prev, optimistic]);
 
@@ -229,21 +261,29 @@ export default function ChatWindow({ conversation, onClose }) {
         },
         body: JSON.stringify({
           conversationId: conversation._id,
-          content: messageContent
+          content: content,
+          type: type
         })
       });
 
       const data = await response.json();
       if (response.ok) {
-        // replace optimistic with server message
         setMessages(prev => prev.map(m => m._id === tempId ? data.message : m));
       }
     } catch (error) {
       console.error('Error sending message:', error);
       setMessages(prev => prev.filter(m => m._id !== tempId));
-      setNewMessage(messageContent);
+      if (type === 'text') setNewMessage(content);
       addToast({ type: 'error', title: 'Message failed', message: 'Could not send. Please retry.' });
     }
+  };
+
+  const sendMessage = async (e) => {
+    e.preventDefault();
+    let content = newMessage.trim();
+    if (!content) content = '👍';
+    else setNewMessage('');
+    await sendInternal(content, 'text');
   };
 
   const otherParticipant = conversation?.participants?.find(p => p._id !== user.id);
@@ -407,10 +447,19 @@ export default function ChatWindow({ conversation, onClose }) {
                       isMe
                         ? 'bg-emerald-500 text-white rounded-br-none'
                         : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-bl-none border border-slate-100 dark:border-slate-700'
-                    }`}
+                    } ${message.type === 'image' ? '!p-1 !bg-transparent !border-none !shadow-none' : ''}`}
                   >
-                    {message.content}
-                    <div className={`text-[10px] mt-1 flex items-center justify-end gap-1 opacity-70 ${isMe ? 'text-emerald-100' : 'text-slate-400'}`}>
+                    {message.type === 'image' ? (
+                      <img 
+                        src={message.content} 
+                        alt="Attachment" 
+                        className="max-w-[240px] sm:max-w-[300px] rounded-xl cursor-pointer hover:opacity-95 transition-opacity border border-slate-200 dark:border-slate-700" 
+                        onClick={() => window.open(message.content, '_blank')} 
+                      />
+                    ) : (
+                      message.content
+                    )}
+                    <div className={`text-[10px] mt-1 flex items-center justify-end gap-1 opacity-70 ${isMe && message.type !== 'image' ? 'text-emerald-100' : 'text-slate-400'}`}>
                       {new Date(message.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
                       {isMe && (
                         <span>
@@ -447,6 +496,7 @@ export default function ChatWindow({ conversation, onClose }) {
 
       {/* Message Input */}
       <form onSubmit={sendMessage} className="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 relative">
+        <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileSelect} />
         {showEmojiPicker && (
           <div className="absolute bottom-full left-4 mb-2 p-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 grid grid-cols-5 gap-1 z-20">
             {COMMON_EMOJIS.map(emoji => (
@@ -467,6 +517,15 @@ export default function ChatWindow({ conversation, onClose }) {
         )}
         
         <div className="flex items-end gap-2 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-3xl border border-slate-200 dark:border-slate-700 focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
+          <button
+            type="button"
+            className="p-2 text-slate-400 hover:text-emerald-500 transition-colors rounded-full hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
+            onClick={() => fileInputRef.current?.click()}
+            title="Attach image"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+          </button>
+
           <button
             type="button"
             className="p-2 text-slate-400 hover:text-emerald-500 transition-colors rounded-full hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
@@ -494,10 +553,14 @@ export default function ChatWindow({ conversation, onClose }) {
           
           <button
             type="submit"
-            disabled={!newMessage.trim()}
-            className="p-2 bg-emerald-500 text-white rounded-full shadow-md hover:bg-emerald-600 disabled:opacity-50 disabled:shadow-none transition-all transform hover:scale-105 active:scale-95"
+            className={`p-2 rounded-full shadow-md transition-all transform hover:scale-105 active:scale-95 ${newMessage.trim() ? 'bg-emerald-500 text-white hover:bg-emerald-600' : 'bg-transparent text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'}`}
+            title={newMessage.trim() ? 'Send' : 'Send Like'}
           >
-            <svg className="w-5 h-5 translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+            {newMessage.trim() ? (
+               <svg className="w-5 h-5 translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+            ) : (
+               <span className="text-2xl">👍</span>
+            )}
           </button>
         </div>
       </form>

@@ -206,6 +206,18 @@ export default function ChatPage() {
     });
   }, [conversations, query, user?.id]);
 
+  // Get online users for "Active Now" row
+  const onlineUsers = useMemo(() => {
+    const unique = new Map();
+    conversations.forEach(c => {
+      const other = c.participants.find(p => p._id !== user.id);
+      if (other && isOnline(other)) {
+        unique.set(other._id, other);
+      }
+    });
+    return Array.from(unique.values());
+  }, [conversations, user?.id]);
+
   // Handle hover for user preview
   const handleMouseEnter = (uid) => {
     if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
@@ -257,6 +269,30 @@ export default function ChatPage() {
               <svg className='w-5 h-5 text-slate-400 absolute left-3 top-2.5' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' /></svg>
             </div>
           </div>
+
+          {/* Active Now Row (Messenger Style) */}
+          {activeTab === 'chats' && onlineUsers.length > 0 && !query && (
+            <div className="px-4 py-3 overflow-x-auto custom-scrollbar flex gap-3 border-b border-slate-100 dark:border-slate-800/50 shrink-0">
+              {onlineUsers.map(u => (
+                <div 
+                  key={u._id} 
+                  className="flex flex-col items-center gap-1 min-w-[56px] cursor-pointer group" 
+                  onClick={() => {
+                     const conv = conversations.find(c => c.participants.some(p => p._id === u._id));
+                     if (conv) setSelectedConversation(conv);
+                  }}
+                >
+                  <div className="relative">
+                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-sm ring-2 ring-transparent group-hover:ring-emerald-400 transition-all">
+                      {u.name.charAt(0)}
+                    </div>
+                    <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full"></span>
+                  </div>
+                  <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300 truncate max-w-[60px]">{u.name.split(' ')[0]}</span>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* List Content */}
           <div className='flex-1 overflow-y-auto custom-scrollbar'>
