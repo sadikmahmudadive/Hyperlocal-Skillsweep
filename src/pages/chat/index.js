@@ -15,7 +15,7 @@ function HoverRatingRow({ user, ratingCache, setRatingCache }) {
       if (!uid || cached) return;
       try {
         setLoading(true);
-        const res = await fetch(`/api/reviews/stats?userId=${uid}`);
+        const res = await fetch(/api/reviews/stats?userId=);
         const data = await res.json();
         if (res.ok && active) {
           setRatingCache(prev => ({ ...prev, [uid]: { average: data.average || 0, count: data.count || 0 } }));
@@ -29,11 +29,10 @@ function HoverRatingRow({ user, ratingCache, setRatingCache }) {
   const avg = cached?.average ?? user?.rating?.average ?? 0;
   const count = cached?.count ?? user?.rating?.count ?? 0;
   return (
-    <div className="mt-1 flex items-center gap-2 text-xs text-gray-600">
-      <span className="text-yellow-500">{'⭐'.repeat(Math.round(avg))}{'☆'.repeat(5 - Math.round(avg))}</span>
-      <span>{avg.toFixed ? avg.toFixed(1) : Number(avg).toFixed(1)}</span>
-      <span className="text-gray-400">({count})</span>
-      {loading && <span className="ml-1 inline-block w-3 h-3 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />}
+    <div className='mt-1 flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400'>
+      <span className='text-amber-400'></span>
+      <span className='font-medium text-slate-700 dark:text-slate-200'>{avg.toFixed ? avg.toFixed(1) : Number(avg).toFixed(1)}</span>
+      <span className='text-slate-400'>({count})</span>
     </div>
   );
 }
@@ -98,574 +97,360 @@ export default function ChatPage() {
       fetchConversations();
       fetchUnread();
     });
-    es.onerror = () => {
-      es.close();
-      esRef.current = null;
-      setTimeout(() => {
-        if (!esRef.current) {
-          // trigger refetch; new EventSource will be created on next mount/navigation
-          fetchConversations();
-        }
-      }, 5000);
-    };
     return () => {
       es.close();
-      esRef.current = null;
     };
   }, []);
-  const fetchUnread = async () => {
-    try {
-      const res = await fetch('/api/chat/unread');
-      if (!res.ok) return;
-      const data = await res.json();
-      setUnreadMap(data?.perConversation || {});
-    } catch (e) {}
-  };
 
+  // Fetch suggested users if tab is people and query is empty
   useEffect(() => {
-    if (router.query.conversation) {
-      const conversation = conversations.find(c => c._id === router.query.conversation);
-      if (conversation) {
-        setSelectedConversation(conversation);
-      }
-    } else if (!selectedConversation && conversations.length > 0) {
-      setSelectedConversation(conversations[0]);
+    if (activeTab === 'people' && !debouncedQuery.trim()) {
+      fetchSuggested();
     }
-  }, [router.query.conversation, conversations, selectedConversation]);
+  }, [activeTab, debouncedQuery]);
+
+  // Fetch people search results
+  useEffect(() => {
+    if (activeTab === 'people' && debouncedQuery.trim()) {
+      searchPeople(debouncedQuery);
+    }
+  }, [activeTab, debouncedQuery]);
 
   const fetchConversations = async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch('/api/chat/conversations', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': 'Bearer ' + token }
       });
-      
       const data = await response.json();
       if (response.ok) {
         setConversations(data.conversations);
       }
     } catch (error) {
       console.error('Error fetching conversations:', error);
-    }
-    setLoading(false);
-  };
-
-  const getOtherParticipant = (conversation) => {
-    return conversation.participants.find(p => p._id !== user.id);
-  };
-
-  const filteredConversations = useMemo(() => {
-    if (!query.trim()) return conversations;
-    const q = query.trim().toLowerCase();
-    return conversations.filter((c) => {
-      const other = getOtherParticipant(c);
-      const name = (other?.name || '').toLowerCase();
-      const skill = (c.skillTopic || '').toLowerCase();
-      const last = (c.messages?.[c.messages.length - 1]?.content || '').toLowerCase();
-      return name.includes(q) || skill.includes(q) || last.includes(q);
-    });
-  }, [conversations, query]);
-
-  // New: fetch people by query
-  const fetchPeople = async () => {
-    if (!query || query.trim().length < 2) {
-      setPeople([]);
-      return;
-    }
-    try {
-      setPeopleLoading(true);
-      const res = await fetch(`/api/users/search?query=${encodeURIComponent(query.trim())}`);
-      if (!res.ok) {
-        setPeople([]);
-        setPeopleLoading(false);
-        return;
-      }
-      const data = await res.json();
-      const list = (data?.users || []).filter(u => String(u._id) !== String(user.id));
-      setPeople(list);
-    } catch (e) {
-      setPeople([]);
     } finally {
-      setPeopleLoading(false);
+      setLoading(false);
     }
   };
 
-  // New: fetch suggested users (default list) when no query
-  const fetchSuggestions = async () => {
-    try {
-      setSuggestedLoading(true);
-      const res = await fetch(`/api/users/search`);
-      if (!res.ok) {
-        setSuggested([]);
-        setSuggestedLoading(false);
-        return;
-      }
-      const data = await res.json();
-      const list = (data?.users || []).filter(u => String(u._id) !== String(user.id));
-      setSuggested(list);
-    } catch (e) {
-      setSuggested([]);
-    } finally {
-      setSuggestedLoading(false);
-    }
-  };
-
-  // Trigger: when People tab active and query is short, fetch suggestions
-  useEffect(() => {
-    if (activeTab === 'people' && (!query || query.trim().length < 2)) {
-      fetchSuggestions();
-    }
-  }, [activeTab, query]);
-
-  // Update: use debouncedQuery in people fetch trigger
-  useEffect(() => {
-    if (activeTab === 'people') {
-      if (debouncedQuery && debouncedQuery.trim().length >= 2) {
-        fetchPeople();
-      } else {
-        fetchSuggestions();
-      }
-    }
-  }, [activeTab, debouncedQuery]);
-
-  // New: start chat with a user
-  const startChat = async (recipientId) => {
+  const fetchUnread = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/chat/start', {
+      const res = await fetch('/api/chat/unread', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+      if (res.ok) setUnreadMap(data.unreadCounts || {});
+    } catch {}
+  };
+
+  const fetchSuggested = async () => {
+    setSuggestedLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/users/search?limit=5', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+      if (res.ok) setSuggested(data.users || []);
+    } catch {}
+    finally { setSuggestedLoading(false); }
+  };
+
+  const searchPeople = async (q) => {
+    setPeopleLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(/api/users/search?q=, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+      if (res.ok) setPeople(data.users || []);
+    } catch {}
+    finally { setPeopleLoading(false); }
+  };
+
+  const startConversation = async (participantId, skillTopic) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/chat/start', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': 'Bearer ' + token
         },
-        body: JSON.stringify({ recipientId, skillTopic: '' })
+        body: JSON.stringify({ participantId, skillTopic })
       });
-      if (!res.ok) return;
-      const { conversation } = await res.json();
-      setConversations(prev => {
-        const idx = prev.findIndex(c => c._id === conversation._id);
-        if (idx !== -1) {
-          const copy = [...prev];
-          copy[idx] = conversation;
-          return copy;
-        }
-        return [conversation, ...prev];
-      });
-      setSelectedConversation(conversation);
-      setUnreadMap(prev => ({ ...prev, [conversation._id]: 0 }));
-      router.push({ pathname: '/chat', query: { conversation: conversation._id } }, undefined, { shallow: true });
-    } catch (e) {}
-  };
-
-  // Build a unique, ordered list of recent contacts (other participants from conversations)
-  const recentContacts = useMemo(() => {
-    const seen = new Set();
-    const list = [];
-    for (const c of conversations) {
-      const other = getOtherParticipant(c);
-      if (!other) continue;
-      const key = String(other._id);
-      if (seen.has(key)) continue;
-      const baseUnread = typeof c.unreadCount === 'number'
-        ? c.unreadCount
-        : (c.messages || []).reduce((acc, m) => {
-            const senderId = typeof m.sender === 'object' && m.sender?._id ? m.sender._id : m.sender;
-            return acc + (!m.read && String(senderId) !== String(user.id) ? 1 : 0);
-          }, 0);
-      const unreadCount = unreadMap[c._id] ?? baseUnread;
-      list.push({ user: other, conversationId: c._id, unreadCount, updatedAt: c.updatedAt });
-      seen.add(key);
-    }
-    return list.slice(0, 20);
-  }, [conversations, unreadMap, user?.id]);
-
-  // Helper: select conversation by other user id (fallback to start chat)
-  const selectByOtherUserId = (otherId) => {
-    const conv = conversations.find(c => String(getOtherParticipant(c)?._id) === String(otherId));
-    if (conv) {
-      setSelectedConversation(conv);
-      setUnreadMap(prev => ({ ...prev, [conv._id]: 0 }));
-      router.push({ pathname: '/chat', query: { conversation: conv._id } }, undefined, { shallow: true });
-    } else {
-      startChat(otherId);
+      const data = await response.json();
+      if (response.ok) {
+        await fetchConversations();
+        const conv = data.conversation;
+        // find full conversation object from list if possible, else use returned
+        const full = conversations.find(c => c._id === conv._id) || conv;
+        setSelectedConversation(full);
+        setActiveTab('chats');
+        setQuery('');
+      }
+    } catch (error) {
+      console.error('Error starting conversation:', error);
     }
   };
 
-  // Distance helpers
-  const getUserCoords = (u) => {
-    const coords = u?.location?.coordinates;
-    return Array.isArray(coords) && coords.length === 2 ? coords : null;
-  };
-  const haversineKm = (a, b) => {
-    if (!a || !b) return null;
-    const [lng1, lat1] = a;
-    const [lng2, lat2] = b;
-    const R = 6371; // km
-    const toRad = (d) => (d * Math.PI) / 180;
-    const dLat = toRad(lat2 - lat1);
-    const dLng = toRad(lng2 - lng1);
-    const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
-    return R * c;
-  };
-  const formatDistance = (km) => (km == null ? null : (km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`));
+  // Filter conversations by query
+  const filteredConversations = useMemo(() => {
+    if (!query.trim()) return conversations;
+    const lower = query.toLowerCase();
+    return conversations.filter(c => {
+      const other = c.participants.find(p => p._id !== user.id);
+      return other?.name?.toLowerCase().includes(lower) || c.skillTopic?.toLowerCase().includes(lower);
+    });
+  }, [conversations, query, user?.id]);
 
-  // Rating stars
-  const StarRating = ({ value = 0, count = 0 }) => {
-    const v = Math.round(value);
-    const stars = Array.from({ length: 5 }, (_, i) => (i < v ? '★' : '☆')).join('');
-    return (
-      <span className="text-xs text-yellow-500" title={`${value?.toFixed ? value.toFixed(1) : value}/5 (${count})`}>
-        {stars}
-      </span>
-    );
+  // Handle hover for user preview
+  const handleMouseEnter = (uid) => {
+    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+    setHoverUserId(uid);
   };
-
-  // Focus search when switching to People tab
-  useEffect(() => {
-    if (activeTab === 'people') {
-      // allow next paint
-      setTimeout(() => searchInputRef.current?.focus(), 50);
-    }
-  }, [activeTab]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-      </div>
-    );
-  }
+  const handleMouseLeave = () => {
+    hoverTimeout.current = setTimeout(() => setHoverUserId(null), 300);
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-xl shadow overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-12 h-[70vh]">
-            {/* Conversations List */}
-            <div className="lg:col-span-4 border-r flex flex-col">
-              <div className="p-4 border-b bg-gray-50">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-xl font-semibold">Chats</h2>
-                  <button
-                    className="text-sm px-3 py-1.5 rounded-full bg-green-600 text-white hover:bg-green-700"
-                    onClick={() => setActiveTab('people')}
-                    aria-label="Start a new chat"
-                  >
-                    New Chat
-                  </button>
-                </div>
-                <div className="flex items-center gap-2 mb-3">
-                  <button
-                    className={`px-3 py-1.5 rounded-full text-sm ${activeTab === 'chats' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700'}`}
-                    onClick={() => setActiveTab('chats')}
-                  >
-                    Conversations
-                  </button>
-                  <button
-                    className={`px-3 py-1.5 rounded-full text-sm ${activeTab === 'people' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700'}`}
-                    onClick={() => setActiveTab('people')}
-                  >
-                    People
-                  </button>
-                </div>
-                <div className="relative">
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    placeholder={activeTab === 'people' ? 'Search people by name or skill' : 'Search conversations'}
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    className="w-full rounded-full border border-gray-200 bg-white pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                  <span className="absolute left-3 top-2.5 text-gray-400">🔎</span>
-                </div>
-              </div>
-              <div className="flex-1 overflow-y-auto">
-                {activeTab === 'chats' && (
-                  <>
-                    {/* Recent contacts avatar strip */}
-                    {recentContacts.length > 0 && (
-                      <div className="px-4 py-3 border-b bg-white/50">
-                        <div className="mb-2 text-xs uppercase tracking-wide text-gray-400">Recent</div>
-                        <div className="overflow-x-auto">
-                          <div className="flex items-center gap-4 pr-4">
-                            {recentContacts.map(rc => (
-                              <div key={rc.user._id} className="relative">
-                                <button
-                                  onClick={() => selectByOtherUserId(rc.user._id)}
-                                  onMouseEnter={() => {
-                                    clearTimeout(hoverTimeout.current);
-                                    setHoverUserId(rc.user._id);
-                                  }}
-                                  onMouseLeave={() => {
-                                    hoverTimeout.current = setTimeout(() => setHoverUserId((id) => id === rc.user._id ? null : id), 150);
-                                  }}
-                                  className={`relative flex flex-col items-center focus:outline-none ${selectedConversation && String(getOtherParticipant(selectedConversation)?._id) === String(rc.user._id) ? 'opacity-100' : 'opacity-90 hover:opacity-100'}`}
-                                  title={rc.user.name}
-                                >
-                                  <div className="relative w-12 h-12 rounded-full overflow-hidden ring-2 ring-green-500/40 shadow-sm">
-                                    <img
-                                      src={rc.user?.avatar?.url || `https://ui-avatars.com/api/?name=${encodeURIComponent(rc.user?.name || 'U')}&background=0ea5e9&color=fff&size=128&bold=true`}
-                                      alt={rc.user?.name || 'User avatar'}
-                                      className="h-full w-full object-cover"
-                                    />
-                                    {/* presence dot */}
-                                    <span className={`absolute bottom-0 right-0 h-3 w-3 rounded-full ring-2 ring-white ${isOnline(rc.user) ? 'bg-green-500' : 'bg-gray-300'}`}></span>
-                                    {/* unread badge */}
-                                    {rc.unreadCount > 0 && (
-                                      <span className="absolute -top-1 -right-1 inline-flex items-center justify-center rounded-full bg-green-600 text-white text-[10px] font-semibold h-5 min-w-[1.1rem] px-1">
-                                        {rc.unreadCount}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <span className="mt-1 max-w-[3rem] text-[11px] text-gray-600 truncate text-center">{rc.user?.name}</span>
-                                </button>
-                                {/* Hover card */}
-                                {hoverUserId === rc.user._id && (
-                                  <div
-                                    onMouseEnter={() => {
-                                      clearTimeout(hoverTimeout.current);
-                                      setHoverUserId(rc.user._id);
-                                    }}
-                                    onMouseLeave={() => {
-                                      hoverTimeout.current = setTimeout(() => setHoverUserId(null), 150);
-                                    }}
-                                    className="absolute z-10 mt-2 -left-8 w-56 rounded-lg border border-gray-200 bg-white shadow-lg p-3"
-                                  >
-                                    <div className="flex items-start gap-3">
-                                      <img
-                                        src={rc.user?.avatar?.url || `https://ui-avatars.com/api/?name=${encodeURIComponent(rc.user?.name || 'U')}&background=0ea5e9&color=fff&size=128&bold=true`}
-                                        alt={rc.user?.name || 'User avatar'}
-                                        className="h-10 w-10 rounded-full object-cover"
-                                      />
-                                      <div className="min-w-0">
-                                        <div className="flex items-center gap-2">
-                                          <span className="font-semibold truncate">{rc.user?.name}</span>
-                                          <span className={`inline-block h-2 w-2 rounded-full ${isOnline(rc.user) ? 'bg-green-500' : 'bg-gray-300'}`} title={isOnline(rc.user) ? 'Online' : 'Offline'}></span>
-                                        </div>
-                                        <div className="text-xs text-gray-500 truncate">Last active: {rc.user?.lastActive ? new Date(rc.user.lastActive).toLocaleString() : 'unknown'}</div>
-                                        {/* Rating row */}
-                                        <HoverRatingRow user={rc.user} ratingCache={ratingCache} setRatingCache={setRatingCache} />
-                                        <div className="mt-2 flex items-center gap-3">
-                                          <Link href={`/profile/${rc.user._id}`} className="text-sm text-gray-600 hover:text-gray-800 underline" onClick={() => setHoverUserId(null)}>
-                                            View profile
-                                          </Link>
-                                          <button className="text-sm text-green-700 hover:text-green-800" onClick={() => { setHoverUserId(null); selectByOtherUserId(rc.user._id); }}>
-                                            Message
-                                          </button>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
+    <div className='min-h-screen bg-slate-50 dark:bg-slate-950 pt-20 pb-10 px-4 sm:px-6 lg:px-8'>
+      <div className='max-w-7xl mx-auto h-[calc(100vh-8rem)] bg-white dark:bg-slate-900 rounded-2xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-800 flex'>
+        
+        {/* Sidebar */}
+        <div className={${selectedConversation ? 'hidden lg:flex' : 'flex'} w-full lg:w-96 flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 z-10}>
+          {/* Sidebar Header */}
+          <div className='p-4 border-b border-slate-100 dark:border-slate-800'>
+            <h1 className='text-2xl font-bold text-slate-900 dark:text-white mb-4'>Messages</h1>
+            
+            {/* Tabs */}
+            <div className='flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl mb-4'>
+              <button
+                onClick={() => setActiveTab('chats')}
+                className={lex-1 py-2 text-sm font-medium rounded-lg transition-all }
+              >
+                Chats
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('people');
+                  setTimeout(() => searchInputRef.current?.focus(), 50);
+                }}
+                className={lex-1 py-2 text-sm font-medium rounded-lg transition-all }
+              >
+                People
+              </button>
+            </div>
+
+            {/* Search */}
+            <div className='relative'>
+              <input
+                ref={searchInputRef}
+                type='text'
+                placeholder={activeTab === 'chats' ? 'Search conversations...' : 'Search people...'}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className='w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none'
+              />
+              <svg className='w-5 h-5 text-slate-400 absolute left-3 top-2.5' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' /></svg>
+            </div>
+          </div>
+
+          {/* List Content */}
+          <div className='flex-1 overflow-y-auto custom-scrollbar'>
+            {activeTab === 'chats' ? (
+              // Chats List
+              <div className='divide-y divide-slate-100 dark:divide-slate-800/50'>
+                {loading ? (
+                  [...Array(5)].map((_, i) => (
+                    <div key={i} className='p-4 animate-pulse flex gap-3'>
+                      <div className='w-12 h-12 bg-slate-200 dark:bg-slate-800 rounded-full' />
+                      <div className='flex-1 space-y-2 py-1'>
+                        <div className='h-4 bg-slate-200 dark:bg-slate-800 rounded w-1/3' />
+                        <div className='h-3 bg-slate-200 dark:bg-slate-800 rounded w-3/4' />
+                      </div>
+                    </div>
+                  ))
+                ) : filteredConversations.length === 0 ? (
+                  <div className='p-8 text-center text-slate-500 dark:text-slate-400'>
+                    <div className='w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4'>
+                      <svg className='w-8 h-8 text-slate-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z' /></svg>
+                    </div>
+                    <p>No conversations found.</p>
+                    <button onClick={() => setActiveTab('people')} className='mt-2 text-emerald-600 hover:text-emerald-700 font-medium text-sm'>Start a new chat</button>
+                  </div>
+                ) : (
+                  filteredConversations.map((conv) => {
+                    const other = conv.participants.find(p => p._id !== user.id);
+                    const unread = unreadMap[conv._id] || 0;
+                    const isSelected = selectedConversation?._id === conv._id;
+                    
+                    return (
+                      <div
+                        key={conv._id}
+                        onClick={() => setSelectedConversation(conv)}
+                        className={p-4 cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 }
+                      >
+                        <div className='flex items-start gap-3'>
+                          <div className='relative'>
+                            <div className='w-12 h-12 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-sm'>
+                              {other?.name?.charAt(0)}
+                            </div>
+                            {isOnline(other) && (
+                              <span className='absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full'></span>
+                            )}
+                          </div>
+                          <div className='flex-1 min-w-0'>
+                            <div className='flex justify-between items-baseline mb-1'>
+                              <h3 className={ont-semibold truncate }>
+                                {other?.name}
+                              </h3>
+                              {conv.lastMessage && (
+                                <span className='text-xs text-slate-400 whitespace-nowrap ml-2'>
+                                  {new Date(conv.lastMessage.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                </span>
+                              )}
+                            </div>
+                            <div className='flex justify-between items-center'>
+                              <p className={	ext-sm truncate pr-2 }>
+                                {conv.lastMessage ? (
+                                  <>
+                                    {conv.lastMessage.sender === user.id && <span className='text-slate-400 mr-1'>You:</span>}
+                                    {conv.lastMessage.content}
+                                  </>
+                                ) : (
+                                  <span className='italic text-slate-400'>No messages yet</span>
                                 )}
+                              </p>
+                              {unread > 0 && (
+                                <span className='min-w-[1.25rem] h-5 px-1.5 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center'>
+                                  {unread}
+                                </span>
+                              )}
+                            </div>
+                            {conv.skillTopic && (
+                              <div className='mt-1.5'>
+                                <span className='inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'>
+                                  {conv.skillTopic}
+                                </span>
                               </div>
-                            ))}
+                            )}
                           </div>
                         </div>
                       </div>
-                    )}
-                    {filteredConversations.map(conversation => {
-                      const otherUser = getOtherParticipant(conversation);
-                      const lastMessage = conversation.messages[conversation.messages.length - 1];
-                      const baseUnread = typeof conversation.unreadCount === 'number'
-                        ? conversation.unreadCount
-                        : (conversation.messages || []).reduce((acc, m) => {
-                            const senderId = typeof m.sender === 'object' && m.sender?._id ? m.sender._id : m.sender;
-                            return acc + (!m.read && String(senderId) !== String(user.id) ? 1 : 0);
-                          }, 0);
-                      const unreadCount = unreadMap[conversation._id] ?? baseUnread;
-                      
-                      return (
-                        <div
-                          key={conversation._id}
-                          onClick={() => {
-                            setSelectedConversation(conversation);
-                            setUnreadMap((prev) => ({ ...prev, [conversation._id]: 0 }));
-                            router.push({ pathname: '/chat', query: { conversation: conversation._id } }, undefined, { shallow: true });
-                          }}
-                          className={`px-4 py-3 border-b cursor-pointer transition-colors duration-150 hover:bg-gray-50 flex items-center gap-3 ${
-                            selectedConversation?._id === conversation._id ? 'bg-green-50/70' : ''
-                          }`}
-                        >
-                          <div className="relative w-12 h-12 rounded-full overflow-hidden ring-2 ring-green-500/70 ring-offset-2 shadow-sm flex-shrink-0">
-                            <img
-                              src={otherUser?.avatar?.url || `https://ui-avatars.com/api/?name=${encodeURIComponent(otherUser?.name || 'U')}&background=0ea5e9&color=fff&size=128&bold=true`}
-                              alt={otherUser?.name || 'User avatar'}
-                              className="h-full w-full object-cover"
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2">
-                              <h3 className="font-semibold truncate">{otherUser?.name}</h3>
-                              <span className="text-[11px] text-gray-400 whitespace-nowrap">
-                                {lastMessage?.createdAt ? new Date(lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
-                              </span>
-                            </div>
-                            <p className={`text-sm truncate ${unreadCount > 0 ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
-                              {lastMessage?.content || 'No messages yet'}
-                            </p>
-                            <p className="text-xs text-gray-400 mt-0.5 truncate">{conversation.skillTopic}</p>
-                          </div>
-                          {unreadCount > 0 && (
-                            <span className="ml-2 inline-flex items-center justify-center rounded-full bg-green-600 text-white text-xs font-semibold h-5 min-w-[1.25rem] px-1.5">
-                              {unreadCount}
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                    {filteredConversations.length === 0 && (
-                      <div className="p-8 text-center text-gray-500">No conversations</div>
-                    )}
-                  </>
-                )}
-                {activeTab === 'people' && (
-                  <>
-                    {query && query.trim().length >= 2 ? (
-                      <>
-                        {peopleLoading && (
-                          <div className="p-8 flex items-center justify-center text-gray-500">
-                            <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></span>
-                          </div>
-                        )}
-                        {!peopleLoading && people.map(person => {
-                          const meCoords = getUserCoords(user);
-                          const themCoords = getUserCoords(person);
-                          const dist = meCoords && themCoords ? haversineKm(meCoords, themCoords) : null;
-                          return (
-                            <div
-                              key={person._id}
-                              onClick={() => startChat(person._id)}
-                              className="px-4 py-3 border-b cursor-pointer transition-colors duration-150 hover:bg-gray-50 flex items-center gap-3"
-                            >
-                              <div className="relative w-12 h-12 rounded-full overflow-hidden ring-2 ring-green-500/30 ring-offset-2 shadow-sm flex-shrink-0">
-                                <img
-                                  src={person?.avatar?.url || `https://ui-avatars.com/api/?name=${encodeURIComponent(person?.name || 'U')}&background=0ea5e9&color=fff&size=128&bold=true`}
-                                  alt={person?.name || 'User avatar'}
-                                  className="h-full w-full object-cover"
-                                />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <h3 className="font-semibold truncate">
-                                    <Link href={`/profile/${person._id}`} onClick={(e) => e.stopPropagation()} className="hover:underline">
-                                      {person?.name}
-                                    </Link>
-                                  </h3>
-                                  {person?.rating?.average > 0 && (
-                                    <StarRating value={person.rating.average} count={person.rating.count} />
-                                  )}
-                                  {formatDistance(dist) && (
-                                    <span className="text-xs text-gray-500">• {formatDistance(dist)} away</span>
-                                  )}
-                                </div>
-                                <p className="text-sm text-gray-600 truncate">{person?.bio || 'Tap to start chatting'}</p>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <Link href={`/profile/${person._id}`} onClick={(e) => e.stopPropagation()} className="text-gray-600 hover:text-gray-800 text-sm">
-                                  View
-                                </Link>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); startChat(person._id); }}
-                                  className="text-green-700 hover:text-green-800 text-sm font-medium"
-                                  aria-label={`Start chat with ${person?.name || 'user'}`}
-                                >
-                                  Start
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                        {!peopleLoading && people.length === 0 && (
-                          <div className="p-8 text-center text-gray-500">No people found</div>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <div className="px-4 py-2 text-xs uppercase tracking-wide text-gray-400">Suggested</div>
-                        {suggestedLoading && (
-                          <div className="p-8 flex items-center justify-center text-gray-500">
-                            <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></span>
-                          </div>
-                        )}
-                        {!suggestedLoading && suggested.map(person => {
-                          const meCoords = getUserCoords(user);
-                          const themCoords = getUserCoords(person);
-                          const dist = meCoords && themCoords ? haversineKm(meCoords, themCoords) : null;
-                          return (
-                            <div
-                              key={person._id}
-                              onClick={() => startChat(person._id)}
-                              className="px-4 py-3 border-b cursor-pointer transition-colors duration-150 hover:bg-gray-50 flex items-center gap-3"
-                            >
-                              <div className="relative w-12 h-12 rounded-full overflow-hidden ring-2 ring-green-500/30 ring-offset-2 shadow-sm flex-shrink-0">
-                                <img
-                                  src={person?.avatar?.url || `https://ui-avatars.com/api/?name=${encodeURIComponent(person?.name || 'U')}&background=0ea5e9&color=fff&size=128&bold=true`}
-                                  alt={person?.name || 'User avatar'}
-                                  className="h-full w-full object-cover"
-                                />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <h3 className="font-semibold truncate">
-                                    <Link href={`/profile/${person._id}`} onClick={(e) => e.stopPropagation()} className="hover:underline">
-                                      {person?.name}
-                                    </Link>
-                                  </h3>
-                                  {person?.rating?.average > 0 && (
-                                    <StarRating value={person.rating.average} count={person.rating.count} />
-                                  )}
-                                  {formatDistance(dist) && (
-                                    <span className="text-xs text-gray-500">• {formatDistance(dist)} away</span>
-                                  )}
-                                </div>
-                                <p className="text-sm text-gray-600 truncate">{person?.bio || 'Tap to start chatting'}</p>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <Link href={`/profile/${person._id}`} onClick={(e) => e.stopPropagation()} className="text-gray-600 hover:text-gray-800 text-sm">
-                                  View
-                                </Link>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); startChat(person._id); }}
-                                  className="text-green-700 hover:text-green-800 text-sm font-medium"
-                                  aria-label={`Start chat with ${person?.name || 'user'}`}
-                                >
-                                  Start
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                        {!suggestedLoading && suggested.length === 0 && (
-                          <div className="p-8 text-center text-gray-500">No suggestions available</div>
-                        )}
-                      </>
-                    )}
-                  </>
+                    );
+                  })
                 )}
               </div>
-            </div>
-
-            {/* Chat Window */}
-            <div className="lg:col-span-8">
-              {selectedConversation ? (
-                <ChatWindow 
-                  conversation={selectedConversation}
-                  onClose={() => setSelectedConversation(null)}
-                />
-              ) : (
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-center text-gray-500">
-                    <div className="text-6xl mb-4">💬</div>
-                    <p>Select a conversation to start chatting</p>
+            ) : (
+              // People List
+              <div className='p-4 space-y-4'>
+                {activeTab === 'people' && !debouncedQuery.trim() && (
+                  <div className='mb-2'>
+                    <h3 className='text-xs font-bold text-slate-400 uppercase tracking-wider mb-3'>Suggested</h3>
+                    {suggestedLoading ? (
+                      <div className='space-y-3'>
+                        {[...Array(3)].map((_, i) => (
+                          <div key={i} className='h-16 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse' />
+                        ))}
+                      </div>
+                    ) : suggested.length === 0 ? (
+                      <p className='text-sm text-slate-500 italic'>No suggestions available.</p>
+                    ) : (
+                      <div className='space-y-3'>
+                        {suggested.map(u => (
+                          <div key={u._id} className='group relative bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 hover:shadow-md transition-all'>
+                            <div className='flex items-center gap-3'>
+                              <div className='w-10 h-10 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold'>
+                                {u.name.charAt(0)}
+                              </div>
+                              <div className='flex-1 min-w-0'>
+                                <h4 className='font-medium text-slate-900 dark:text-white truncate'>{u.name}</h4>
+                                <HoverRatingRow user={u} ratingCache={ratingCache} setRatingCache={setRatingCache} />
+                              </div>
+                              <button
+                                onClick={() => startConversation(u._id, u.skills?.[0]?.name || 'General')}
+                                className='p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-full transition-colors'
+                                title='Start chat'
+                              >
+                                <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z' /></svg>
+                              </button>
+                            </div>
+                            {u.skills?.length > 0 && (
+                              <div className='mt-2 flex flex-wrap gap-1'>
+                                {u.skills.slice(0, 3).map(s => (
+                                  <span key={s.name} className='text-[10px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded'>
+                                    {s.name}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+
+                {debouncedQuery.trim() && (
+                  <div>
+                    <h3 className='text-xs font-bold text-slate-400 uppercase tracking-wider mb-3'>Search Results</h3>
+                    {peopleLoading ? (
+                      <div className='space-y-3'>
+                        {[...Array(3)].map((_, i) => (
+                          <div key={i} className='h-16 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse' />
+                        ))}
+                      </div>
+                    ) : people.length === 0 ? (
+                      <p className='text-sm text-slate-500 italic'>No users found matching '{query}'.</p>
+                    ) : (
+                      <div className='space-y-3'>
+                        {people.map(u => (
+                          <div key={u._id} className='bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 hover:shadow-md transition-all'>
+                            <div className='flex items-center gap-3'>
+                              <div className='w-10 h-10 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold'>
+                                {u.name.charAt(0)}
+                              </div>
+                              <div className='flex-1 min-w-0'>
+                                <h4 className='font-medium text-slate-900 dark:text-white truncate'>{u.name}</h4>
+                                <p className='text-xs text-slate-500 truncate'>{u.bio || 'No bio available'}</p>
+                              </div>
+                              <button
+                                onClick={() => startConversation(u._id, u.skills?.[0]?.name || 'General')}
+                                className='px-3 py-1.5 bg-emerald-500 text-white text-xs font-medium rounded-full hover:bg-emerald-600 transition-colors shadow-sm'
+                              >
+                                Message
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+        </div>
+
+        {/* Main Chat Area */}
+        <div className={lex-1 flex flex-col bg-slate-50 dark:bg-slate-950 }>
+          {selectedConversation ? (
+            <ChatWindow 
+              conversation={selectedConversation} 
+              onClose={() => setSelectedConversation(null)} 
+            />
+          ) : (
+            <div className='flex-1 flex flex-col items-center justify-center text-slate-400 p-8 text-center'>
+              <div className='w-24 h-24 bg-slate-100 dark:bg-slate-900 rounded-full flex items-center justify-center mb-6 shadow-inner'>
+                <svg className='w-12 h-12 text-slate-300 dark:text-slate-700' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth='1.5' d='M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z' /></svg>
+              </div>
+              <h2 className='text-xl font-semibold text-slate-700 dark:text-slate-300 mb-2'>Select a conversation</h2>
+              <p className='max-w-xs text-sm text-slate-500'>Choose a chat from the list or start a new one to begin messaging.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

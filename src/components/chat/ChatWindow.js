@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
 
+const COMMON_EMOJIS = ['👍', '👋', '😊', '😂', '❤️', '🎉', '🤔', '👀', '🔥', '✨'];
+
 export default function ChatWindow({ conversation, onClose }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -19,6 +21,9 @@ export default function ChatWindow({ conversation, onClose }) {
   const [newMsgCount, setNewMsgCount] = useState(0);
   const [showJumpUnread, setShowJumpUnread] = useState(false);
   const [searchingUnread, setSearchingUnread] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const textareaRef = useRef(null);
+  
   const messageRefs = useRef({});
   const setMsgRef = (id, el) => {
     if (!id) return;
@@ -32,6 +37,14 @@ export default function ChatWindow({ conversation, onClose }) {
       messagesEndRef.current?.scrollIntoView();
     }
   };
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+    }
+  }, [newMessage]);
 
   // Bottom detection and load-older on top reach
   useEffect(() => {
@@ -234,6 +247,14 @@ export default function ChatWindow({ conversation, onClose }) {
   };
 
   const otherParticipant = conversation?.participants?.find(p => p._id !== user.id);
+  
+  const isOnline = (u) => {
+    if (!u?.lastActive) return false;
+    try {
+      const last = new Date(u.lastActive).getTime();
+      return Date.now() - last < 5 * 60 * 1000;
+    } catch (_) { return false; }
+  };
 
   const someoneTyping = Object.keys(typingUsers).length > 0;
 
@@ -268,77 +289,145 @@ export default function ChatWindow({ conversation, onClose }) {
     scrollToBottom();
   };
 
+  // Helper to format date separators
+  const getDateLabel = (date) => {
+    const d = new Date(date);
+    const now = new Date();
+    if (d.toDateString() === now.toDateString()) return 'Today';
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+  };
+
   return (
-    <div className="flex flex-col h-full bg-white rounded-lg shadow-lg">
+    <div className="flex flex-col h-full bg-white dark:bg-slate-900 rounded-2xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-800">
       {/* Chat Header */}
-      <div className="flex items-center justify-between p-4 border-b">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-semibold">
-            {otherParticipant?.name?.charAt(0)}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm z-10">
+        <div className="flex items-center space-x-4">
+          <div className="relative">
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center text-white font-bold shadow-sm">
+              {otherParticipant?.name?.charAt(0)}
+            </div>
+            {otherParticipant && (
+               <span className={`absolute bottom-0 right-0 w-3.5 h-3.5 border-2 border-white dark:border-slate-900 rounded-full ${
+                 otherParticipant.isAvailable === false ? 'bg-slate-400' : (isOnline(otherParticipant) ? 'bg-emerald-500' : 'bg-amber-500')
+               }`} title={otherParticipant.isAvailable === false ? 'Unavailable' : (isOnline(otherParticipant) ? 'Online' : 'Away')}></span>
+            )}
           </div>
           <div>
-            <h3 className="font-semibold">{otherParticipant?.name}</h3>
-            <p className="text-sm text-gray-600">Skill: {conversation?.skillTopic}</p>
+            <h3 className="font-semibold text-slate-900 dark:text-slate-100">{otherParticipant?.name}</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+              {conversation?.skillTopic && <span className="px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">{conversation.skillTopic}</span>}
+              {someoneTyping && <span className="text-emerald-500 animate-pulse ml-1">typing...</span>}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           {showJumpUnread && (
             <button
               onClick={jumpToFirstUnread}
-              className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 hover:bg-green-200"
+              className="text-xs px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 transition-colors"
               disabled={searchingUnread}
             >
-              {searchingUnread ? 'Searching…' : 'Jump to first unread'}
+              {searchingUnread ? 'Searching…' : 'Jump to unread'}
             </button>
           )}
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
+          <button 
+            onClick={onClose} 
+            className="p-2 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
+            aria-label="Close chat"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
         </div>
       </div>
 
       {/* SSE Connection status */}
       {!sseConnected && (
-        <div className="px-4 py-2 text-xs text-yellow-800 bg-yellow-50 border-b border-yellow-100 flex items-center gap-2">
-          <svg className="animate-spin h-3 w-3 text-yellow-600" viewBox="0 0 24 24">
+        <div className="px-4 py-2 text-xs text-amber-700 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-200 border-b border-amber-100 dark:border-amber-800/50 flex items-center justify-center gap-2">
+          <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
           </svg>
-          Reconnecting to live updates…
+          Reconnecting...
         </div>
       )}
 
       {/* Messages */}
-      <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-6 bg-slate-50 dark:bg-slate-950/50">
         {hasMore && (
-          <div className="text-center text-xs text-gray-400">Scroll up to load older messages</div>
+          <div className="flex justify-center py-2">
+            <div className="h-1 w-1 bg-slate-300 rounded-full mx-0.5 animate-bounce" style={{ animationDelay: '0s' }}></div>
+            <div className="h-1 w-1 bg-slate-300 rounded-full mx-0.5 animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+            <div className="h-1 w-1 bg-slate-300 rounded-full mx-0.5 animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+          </div>
         )}
+        
         {loading && messages.length === 0 ? (
-          <div className="text-center text-gray-500">Loading messages...</div>
+          <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-3">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+            <p className="text-sm">Loading conversation...</p>
+          </div>
         ) : (
-          messages.map((message) => (
-            <div
-              key={message._id}
-              ref={(el) => setMsgRef(message._id, el)}
-              className={`flex ${message.sender._id === user.id ? 'justify-end' : 'justify-start'}`}
-            >
+          messages.reduce((acc, message, index) => {
+            const prevMessage = messages[index - 1];
+            const isMe = message.sender._id === user.id;
+            const isSameSender = prevMessage && prevMessage.sender._id === message.sender._id;
+            
+            // Date separator
+            const dateLabel = getDateLabel(message.createdAt);
+            const prevDateLabel = prevMessage ? getDateLabel(prevMessage.createdAt) : null;
+            if (dateLabel !== prevDateLabel) {
+              acc.push(
+                <div key={`date-${dateLabel}`} className="flex justify-center my-4">
+                  <span className="px-3 py-1 rounded-full bg-slate-200/60 dark:bg-slate-800/60 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 shadow-sm backdrop-blur-sm">
+                    {dateLabel}
+                  </span>
+                </div>
+              );
+            }
+
+            acc.push(
               <div
-                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                  message.sender._id === user.id
-                    ? 'bg-green-500 text-white'
-                    : 'bg-gray-200 text-gray-900'
-                }`}
+                key={message._id}
+                ref={(el) => setMsgRef(message._id, el)}
+                className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} ${isSameSender ? 'mt-1' : 'mt-4'}`}
               >
-                <p className="text-sm">{message.content}</p>
-                <p className={`text-xs mt-1 ${
-                  message.sender._id === user.id ? 'text-green-100' : 'text-gray-500'
-                }`}>
-                  {new Date(message.createdAt).toLocaleTimeString([], { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </p>
+                <div className={`flex max-w-[85%] sm:max-w-[75%] ${isMe ? 'flex-row-reverse' : 'flex-row'} items-end gap-2`}>
+                  {!isMe && !isSameSender && (
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex-shrink-0 flex items-center justify-center text-[10px] text-white font-bold shadow-sm mb-1">
+                      {message.sender.name?.charAt(0)}
+                    </div>
+                  )}
+                  {!isMe && isSameSender && <div className="w-6" />} {/* Spacer */}
+
+                  <div
+                    className={`px-4 py-2.5 rounded-2xl shadow-sm text-sm leading-relaxed break-words relative group ${
+                      isMe
+                        ? 'bg-emerald-500 text-white rounded-br-none'
+                        : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-bl-none border border-slate-100 dark:border-slate-700'
+                    }`}
+                  >
+                    {message.content}
+                    <div className={`text-[10px] mt-1 flex items-center justify-end gap-1 opacity-70 ${isMe ? 'text-emerald-100' : 'text-slate-400'}`}>
+                      {new Date(message.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                      {isMe && (
+                        <span>
+                          {message.read ? (
+                            <span title="Read">✓✓</span>
+                          ) : (
+                            <span title="Sent">✓</span>
+                          )}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))
+            );
+            return acc;
+          }, [])
         )}
         <div ref={messagesEndRef} />
       </div>
@@ -348,41 +437,68 @@ export default function ChatWindow({ conversation, onClose }) {
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-10">
           <button
             onClick={onJumpToLatest}
-            className="px-3 py-1.5 rounded-full bg-green-600 text-white shadow hover:bg-green-700 text-sm"
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 transition-transform hover:-translate-y-1 text-sm font-medium"
           >
-            {newMsgCount} new message{newMsgCount > 1 ? 's' : ''} — Jump to latest
+            <span>↓</span>
+            {newMsgCount} new message{newMsgCount > 1 ? 's' : ''}
           </button>
         </div>
       )}
 
       {/* Message Input */}
-      <form onSubmit={sendMessage} className="p-4 border-t">
-        <div className="flex items-center gap-2">
+      <form onSubmit={sendMessage} className="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 relative">
+        {showEmojiPicker && (
+          <div className="absolute bottom-full left-4 mb-2 p-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 grid grid-cols-5 gap-1 z-20">
+            {COMMON_EMOJIS.map(emoji => (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => {
+                  setNewMessage(prev => prev + emoji);
+                  setShowEmojiPicker(false);
+                  textareaRef.current?.focus();
+                }}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-xl transition-colors"
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        )}
+        
+        <div className="flex items-end gap-2 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-3xl border border-slate-200 dark:border-slate-700 focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
           <button
             type="button"
-            className="px-2 py-1 rounded hover:bg-gray-100"
-            title="Emoji picker (coming soon)"
-            onClick={(e) => e.preventDefault()}
+            className="p-2 text-slate-400 hover:text-emerald-500 transition-colors rounded-full hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            title="Add emoji"
           >
-            😊
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           </button>
-          <button
-            type="button"
-            className="px-2 py-1 rounded hover:bg-gray-100"
-            title="Attach (coming soon)"
-            onClick={(e) => e.preventDefault()}
-          >
-            📎
-          </button>
-          <input
-            type="text"
+          
+          <textarea
+            ref={textareaRef}
             value={newMessage}
             onChange={onChangeMessage}
-            placeholder="Type your message..."
-            className="flex-1 input-field"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage(e);
+              }
+            }}
+            placeholder="Type a message..."
+            className="flex-1 bg-transparent border-none focus:ring-0 p-2 max-h-32 min-h-[40px] resize-none text-slate-800 dark:text-slate-200 placeholder-slate-400"
+            rows={1}
             disabled={loading}
           />
-          <button type="submit" disabled={!newMessage.trim()} className="btn-primary px-6">Send</button>
+          
+          <button
+            type="submit"
+            disabled={!newMessage.trim()}
+            className="p-2 bg-emerald-500 text-white rounded-full shadow-md hover:bg-emerald-600 disabled:opacity-50 disabled:shadow-none transition-all transform hover:scale-105 active:scale-95"
+          >
+            <svg className="w-5 h-5 translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+          </button>
         </div>
       </form>
     </div>

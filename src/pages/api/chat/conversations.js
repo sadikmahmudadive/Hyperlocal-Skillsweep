@@ -20,7 +20,7 @@ async function handler(req, res) {
     const conversations = await Conversation.find({
       participants: userId
     })
-  .populate('participants', 'name avatar rating lastActive')
+    .populate('participants', 'name avatar rating lastActive isAvailable')
     .populate('lastMessage')
     .sort({ updatedAt: -1 })
     .limit(50);

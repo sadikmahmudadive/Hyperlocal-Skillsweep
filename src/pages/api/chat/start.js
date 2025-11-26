@@ -40,7 +40,7 @@ async function handler(req, res) {
     }
 
     await conversation.save();
-    await conversation.populate('participants', 'name avatar rating');
+    await conversation.populate('participants', 'name avatar rating lastActive isAvailable');
 
     try {
       notifyUsers(conversation.participants.map(p => String(p._id || p)), 'conversation-start', {
