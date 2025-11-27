@@ -30,10 +30,7 @@ const conversationSchema = new mongoose.Schema({
     required: true
   }],
   messages: [messageSchema],
-  lastMessage: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Message'
-  },
+  lastMessage: messageSchema,
   skillTopic: {
     type: String,
     required: true

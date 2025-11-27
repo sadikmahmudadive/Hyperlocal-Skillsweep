@@ -21,7 +21,6 @@ async function handler(req, res) {
       participants: userId
     })
     .populate('participants', 'name avatar rating lastActive isAvailable')
-    .populate('lastMessage')
     .sort({ updatedAt: -1 })
     .limit(50);
 
@@ -33,6 +32,14 @@ async function handler(req, res) {
         return acc + (!m.read && String(senderId) !== String(userId) ? 1 : 0);
       }, 0);
       obj.unreadCount = unreadCount;
+      if (obj.lastMessage && typeof obj.lastMessage === 'object' && !Array.isArray(obj.lastMessage)) {
+        obj.lastMessage = {
+          ...obj.lastMessage,
+          sender: obj.lastMessage.sender ? String(obj.lastMessage.sender) : null
+        };
+      } else {
+        obj.lastMessage = null;
+      }
       return obj;
     });
 

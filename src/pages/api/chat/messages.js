@@ -73,7 +73,7 @@ async function handler(req, res) {
       };
 
       conversation.messages.push(newMessage);
-      conversation.lastMessage = conversation.messages[conversation.messages.length - 1]._id;
+      conversation.lastMessage = conversation.messages[conversation.messages.length - 1];
       await conversation.save();
 
       // Populate sender info for the response

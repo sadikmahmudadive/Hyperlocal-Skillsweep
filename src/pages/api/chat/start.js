@@ -11,10 +11,23 @@ async function handler(req, res) {
   try {
     await dbConnect();
     const userId = req.userId;
-  const { recipientId, skillTopic, initialMessage } = req.body;
+    const {
+      recipientId,
+      participantId,
+      skillTopic,
+      initialMessage
+    } = req.body;
+
+    const otherParticipantId = recipientId || participantId;
+    if (!otherParticipantId) {
+      return res.status(400).json({ message: 'recipientId or participantId is required' });
+    }
+    if (String(otherParticipantId) === String(userId)) {
+      return res.status(400).json({ message: 'Cannot start a conversation with yourself' });
+    }
 
     // Check if conversation already exists
-    const findFilter = { participants: { $all: [userId, recipientId] } };
+    const findFilter = { participants: { $all: [userId, otherParticipantId] } };
     if (typeof skillTopic === 'string' && skillTopic.trim() !== '') {
       findFilter.skillTopic = skillTopic;
     }
@@ -23,7 +36,7 @@ async function handler(req, res) {
     if (!conversation) {
       // Create new conversation
       conversation = new Conversation({
-        participants: [userId, recipientId],
+        participants: [userId, otherParticipantId],
         skillTopic,
         messages: []
       });
@@ -36,7 +49,7 @@ async function handler(req, res) {
         content: initialMessage,
         read: false
       });
-      conversation.lastMessage = conversation.messages[conversation.messages.length - 1]._id;
+      conversation.lastMessage = conversation.messages[conversation.messages.length - 1];
     }
 
     await conversation.save();
