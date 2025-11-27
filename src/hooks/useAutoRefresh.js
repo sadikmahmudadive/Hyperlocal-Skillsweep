@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
+import { useRefresh } from '../contexts/RefreshContext';
 
 /**
  * useAutoRefresh
@@ -14,7 +15,13 @@ import { useRouter } from 'next/router';
  */
 export default function useAutoRefresh(interval = 60000, enabled = true, options = { shallow: true }) {
   const router = useRouter();
+  const { triggerRefresh } = useRefresh() || {};
   const timerRef = useRef(null);
+  const optionsRef = useRef(options);
+
+  useEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -23,12 +30,36 @@ export default function useAutoRefresh(interval = 60000, enabled = true, options
     const tick = () => {
       // Skip if document hidden (background tab)
       if (typeof document !== 'undefined' && document.hidden) return;
-      router.replace(router.asPath, undefined, options);
+      const currentOptions = optionsRef.current || { shallow: true };
+      const { message: optMessage, ...routerOptions } = currentOptions;
+      const normalizedOptions = {
+        shallow: routerOptions.shallow ?? true,
+        fullReload: routerOptions.fullReload,
+      };
+
+      if (triggerRefresh) {
+        triggerRefresh({
+          message: optMessage || 'Keeping things fresh…',
+          fullReload: normalizedOptions.fullReload,
+          shallow: normalizedOptions.shallow,
+        });
+      } else {
+        const fallbackOptions = { ...routerOptions };
+        delete fallbackOptions.fullReload;
+        if (normalizedOptions.fullReload) {
+          router.replace(router.asPath, undefined, fallbackOptions);
+        } else {
+          router.replace(router.asPath, undefined, {
+            ...fallbackOptions,
+            shallow: normalizedOptions.shallow,
+          });
+        }
+      }
     };
 
     timerRef.current = setInterval(tick, interval);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [enabled, interval, router.isReady, router.asPath]);
+  }, [enabled, interval, router.isReady, router.asPath, triggerRefresh]);
 }

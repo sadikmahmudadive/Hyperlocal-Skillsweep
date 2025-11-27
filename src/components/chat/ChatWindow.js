@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useRefresh } from '../../contexts/RefreshContext';
 
 const COMMON_EMOJIS = ['👍', '👋', '😊', '😂', '❤️', '🎉', '🤔', '👀', '🔥', '✨'];
 
@@ -10,6 +11,7 @@ export default function ChatWindow({ conversation, onClose }) {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
+  const { triggerRefresh } = useRefresh() || {};
   const messagesEndRef = useRef(null);
   const { addToast } = useToast();
   const [typingUsers, setTypingUsers] = useState({});
@@ -275,6 +277,12 @@ export default function ChatWindow({ conversation, onClose }) {
       const data = await response.json();
       if (response.ok) {
         setMessages(prev => prev.map(m => m._id === tempId ? data.message : m));
+        const refreshFn = () => fetchMessages(true);
+        if (triggerRefresh) {
+          triggerRefresh({ message: 'Syncing chat…', refreshFn });
+        } else {
+          refreshFn();
+        }
       }
     } catch (error) {
       console.error('Error sending message:', error);

@@ -1,7 +1,7 @@
 import { forwardRef } from 'react';
 
 const InteractiveCard = forwardRef(function InteractiveCard({ as: Component = 'div', className = '', highlight, children, ...props }, ref) {
-  const base = 'interactive-card group relative overflow-hidden rounded-3xl border border-white/60 bg-white/80 p-6 shadow-soft transition-all duration-300 dark:border-slate-800/70 dark:bg-slate-900/60';
+  const base = 'interactive-card group relative overflow-hidden rounded-3xl border border-white/60 bg-white/80 p-6 shadow-soft transition-all duration-300 dark:border-slate-800/70 dark:bg-slate-900/60 surface-card';
   const highlightClass = highlight ? 'ring-2 ring-emerald-300/60 ring-offset-2 ring-offset-white dark:ring-emerald-500/30 dark:ring-offset-slate-900' : '';
   return (
     <Component

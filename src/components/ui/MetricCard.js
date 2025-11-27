@@ -1,6 +1,6 @@
 export default function MetricCard({ icon, label, value, helpText, trend }) {
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-5 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-elevated dark:border-slate-800/70 dark:bg-slate-900/60">
+    <div className="group relative overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-5 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-elevated dark:border-slate-800/70 dark:bg-slate-900/60 surface-card">
       <div className="pointer-events-none absolute -top-12 right-0 h-32 w-32 rounded-full bg-gradient-to-br from-emerald-300/20 via-sky-300/15 to-purple-300/15 blur-3xl transition-opacity duration-300 group-hover:opacity-100" />
       <div className="relative z-[1] flex items-start justify-between gap-4">
         <div className="space-y-3">
@@ -10,11 +10,11 @@ export default function MetricCard({ icon, label, value, helpText, trend }) {
                 {icon}
               </div>
             )}
-            <span className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">
+            <span className="heading-eyebrow text-soft">
               {label}
             </span>
           </div>
-          <div className="font-display text-3xl font-semibold text-slate-900 dark:text-slate-100">
+          <div className="font-display text-3xl font-semibold text-strong">
             {value}
           </div>
         </div>
@@ -25,7 +25,7 @@ export default function MetricCard({ icon, label, value, helpText, trend }) {
         )}
       </div>
       {helpText && (
-        <p className="mt-4 text-sm text-slate-500 dark:text-slate-300/80">
+        <p className="copy-subtle mt-4 text-soft">
           {helpText}
         </p>
       )}

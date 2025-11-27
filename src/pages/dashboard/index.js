@@ -263,7 +263,7 @@ export default function Dashboard() {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4">
         <LoadingSpinner size="large" />
-        <p className="text-sm text-slate-500 dark:text-slate-300">Loading your dashboard…</p>
+        <p className="copy-subtle text-soft">Loading your dashboard…</p>
       </div>
     );
   }
@@ -329,8 +329,8 @@ export default function Dashboard() {
                   {action.icon}
                 </div>
                 <div className="space-y-2">
-                  <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-slate-100">{action.title}</h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-300">{action.description}</p>
+                  <h3 className="font-display text-xl font-semibold text-strong">{action.title}</h3>
+                  <p className="copy-subtle text-soft">{action.description}</p>
                 </div>
               </div>
             </InteractiveCard>
@@ -342,8 +342,8 @@ export default function Dashboard() {
               <GradientPill className="bg-white/20 text-slate-900 dark:bg-slate-900/40 dark:text-slate-100">
                 Community kudos
               </GradientPill>
-              <h3 className="font-display text-2xl font-semibold">You&apos;ve completed {stats.completedTransactions} exchanges</h3>
-              <p className="text-sm text-slate-700/80 dark:text-slate-200/80">Your skills are making a real impact. Keep sharing and your reputation (and credits) will keep climbing.</p>
+              <h3 className="font-display text-2xl font-semibold text-strong">You&apos;ve completed {stats.completedTransactions} exchanges</h3>
+              <p className="copy-subtle text-soft">Your skills are making a real impact. Keep sharing and your reputation (and credits) will keep climbing.</p>
             </div>
             <Button
               type="button"
@@ -362,8 +362,8 @@ export default function Dashboard() {
           <div className="flex h-full flex-col overflow-hidden rounded-[calc(theme(borderRadius.3xl)-2px)]">
             <div className="flex flex-col gap-2 border-b border-white/60 bg-white/60 px-6 py-5 dark:border-slate-800/60 dark:bg-slate-900/50 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-slate-100">Recent activity</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-300">Tap a swap to revisit the conversation or leave a review.</p>
+                <h3 className="font-display text-xl font-semibold text-strong">Recent activity</h3>
+                <p className="copy-subtle text-soft">Tap a swap to revisit the conversation or leave a review.</p>
               </div>
               {recentActivity.length > 0 && (
                 <Link href="/dashboard/transactions" className="text-sm font-semibold text-emerald-600 hover:text-emerald-500 dark:text-emerald-200">

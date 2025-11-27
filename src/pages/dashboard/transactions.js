@@ -6,6 +6,7 @@ import { Skeleton } from '../../components/ui/Skeleton';
 import Modal from '../../components/ui/Modal';
 import { useRouter } from 'next/router';
 import { Button } from '../../components/ui/Button';
+import { useRefresh } from '../../contexts/RefreshContext';
 
 export default function Transactions() {
   const { user } = useAuth();
@@ -20,6 +21,7 @@ export default function Transactions() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const router = useRouter();
   const { addToast } = useToast();
+  const { triggerRefresh } = useRefresh() || {};
   
   useRequireAuth();
   // Auto refresh transactions every 60s
@@ -81,6 +83,15 @@ export default function Transactions() {
     setLoading(false);
   };
 
+  const refreshTransactions = async (message = 'Refreshing exchanges…') => {
+    const exec = () => fetchTransactions();
+    if (triggerRefresh) {
+      await triggerRefresh({ message, refreshFn: exec });
+    } else {
+      await exec();
+    }
+  };
+
   const confirmTransaction = async (transactionId) => {
     try {
       const token = localStorage.getItem('token');
@@ -95,7 +106,7 @@ export default function Transactions() {
 
       if (response.ok) {
         addToast({ type: 'success', title: 'Confirmed', message: 'Transaction confirmed' });
-        fetchTransactions();
+        await refreshTransactions('Updating transaction stream…');
       } else {
         const data = await response.json();
         addToast({ type: 'error', title: 'Confirm failed', message: data.message || 'Unable to confirm' });
@@ -120,7 +131,7 @@ export default function Transactions() {
 
       if (response.ok) {
         addToast({ type: 'success', title: 'Started', message: 'Service started' });
-        fetchTransactions();
+        await refreshTransactions('Refreshing progress…');
       } else {
         const data = await response.json();
         addToast({ type: 'error', title: 'Start failed', message: data.message || 'Unable to start service' });
@@ -145,7 +156,7 @@ export default function Transactions() {
 
       if (response.ok) {
         addToast({ type: 'success', title: 'Completed', message: 'Transaction completed' });
-        fetchTransactions();
+        await refreshTransactions('Syncing completion…');
       } else {
         const data = await response.json();
         addToast({ type: 'error', title: 'Complete failed', message: data.message || 'Unable to complete' });

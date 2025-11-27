@@ -100,7 +100,7 @@ export default function AppLayout({ children }) {
   }, [router.pathname]);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-slate-50 transition-colors duration-500 dark:bg-slate-950">
+    <div className="relative min-h-screen overflow-hidden bg-slate-50 text-primary transition-colors duration-500 dark:bg-slate-950">
       <div className="pointer-events-none absolute inset-0 opacity-80 mix-blend-screen dark:mix-blend-lighten">
         <div className="absolute -top-40 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-gradient-to-br from-emerald-300/40 via-sky-400/30 to-purple-400/30 blur-3xl" />
         <div className="absolute top-16 right-[-18%] h-[28rem] w-[26rem] rounded-full bg-gradient-to-br from-sky-500/25 via-emerald-400/20 to-purple-500/20 blur-[140px] animate-float" />
@@ -126,7 +126,7 @@ export default function AppLayout({ children }) {
                       className={`group relative inline-flex items-center gap-1 overflow-hidden rounded-full px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] transition-all duration-200 ${
                         isActive(l.href, l.exact)
                           ? 'text-emerald-600 dark:text-emerald-300'
-                          : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100'
+                          : 'text-soft hover:text-strong dark:hover:text-strong'
                       }`}
                     >
                       <span className="relative z-[1] inline-flex items-center gap-1">
@@ -187,7 +187,7 @@ export default function AppLayout({ children }) {
                   <Button
                     href="/auth/login"
                     variant="ghost"
-                    className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
+                    className="px-3 py-2 text-sm font-medium text-soft hover:text-strong dark:hover:text-strong"
                   >
                     Login
                   </Button>
@@ -201,7 +201,7 @@ export default function AppLayout({ children }) {
             {/* Mobile menu button */}
             <button
               onClick={() => setMobileOpen((v) => !v)}
-              className="md:hidden inline-flex items-center justify-center rounded-full p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              className="md:hidden inline-flex items-center justify-center rounded-full p-2 text-soft transition-colors hover:bg-slate-100 hover:text-strong dark:text-slate-200 dark:hover:bg-slate-800"
               aria-label="Toggle Menu"
             >
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,7 +224,7 @@ export default function AppLayout({ children }) {
                     className={`block rounded-full px-4 py-2 text-sm font-semibold uppercase tracking-[0.26em] ${
                       isActive(l.href, l.exact)
                         ? 'bg-gradient-to-r from-emerald-300/40 via-sky-300/30 to-purple-300/30 text-emerald-700 dark:text-emerald-200'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 dark:text-slate-300 dark:hover:text-slate-100 dark:hover:bg-slate-800/60'
+                        : 'text-soft hover:text-strong hover:bg-slate-100/70 dark:text-slate-300 dark:hover:text-strong dark:hover:bg-slate-800/60'
                     }`}
                   >
                     {l.href === '/dashboard/reviews' ? (
@@ -246,7 +246,7 @@ export default function AppLayout({ children }) {
                     <Button
                       href="/auth/login"
                       variant="ghost"
-                      className="flex-1 justify-center px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-slate-300"
+                      className="flex-1 justify-center px-3 py-2 text-sm font-medium text-soft hover:text-strong"
                     >
                       Login
                     </Button>
@@ -262,7 +262,7 @@ export default function AppLayout({ children }) {
       </header>
 
       {/* Page content */}
-      <main className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 text-slate-900 dark:text-slate-100">
+      <main className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 text-primary">
         <div className="pointer-events-none absolute -top-24 right-0 h-32 w-32 rounded-full bg-gradient-to-br from-emerald-300/40 to-sky-400/30 blur-3xl" />
         {sseDisconnected && (
           <div className="mb-4 flex items-center gap-3 rounded-full border border-amber-200/70 bg-amber-50/80 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.32em] text-amber-700 shadow-soft backdrop-blur-sm dark:border-amber-600/30 dark:bg-amber-900/20 dark:text-amber-200">
@@ -279,16 +279,16 @@ export default function AppLayout({ children }) {
       {/* Footer */}
       <footer className="relative border-t border-white/40 bg-white/70 py-8 backdrop-blur-xl dark:border-slate-900/70 dark:bg-slate-950/70">
         <div className="pointer-events-none absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
-        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 text-sm text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.32em] text-slate-500 dark:text-slate-400">
+        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 text-sm text-soft sm:flex-row sm:items-center sm:justify-between">
+          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.32em] text-soft">
             <span className="inline-flex h-1.5 w-1.5 rounded-full bg-gradient-to-r from-emerald-400 to-sky-400" />
             Crafted for neighborhoods — © {new Date().getFullYear()} SkillSwap
           </p>
           <div className="flex flex-wrap items-center gap-4 text-sm">
-            <Link href="/search" className="transition-colors hover:text-slate-700 dark:hover:text-slate-200">Explore</Link>
-            <Link href="/dashboard" className="transition-colors hover:text-slate-700 dark:hover:text-slate-200">Dashboard</Link>
+            <Link href="/search" className="transition-colors hover:text-strong dark:hover:text-strong">Explore</Link>
+            <Link href="/dashboard" className="transition-colors hover:text-strong dark:hover:text-strong">Dashboard</Link>
             {isAuthenticated && (
-              <Link href="/dashboard/reviews" className="transition-colors hover:text-slate-700 dark:hover:text-slate-200">My Reviews</Link>
+              <Link href="/dashboard/reviews" className="transition-colors hover:text-strong dark:hover:text-strong">My Reviews</Link>
             )}
           </div>
         </div>
