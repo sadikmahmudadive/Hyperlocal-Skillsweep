@@ -2,13 +2,15 @@
 // CREDIT_RATE_BDT: BDT per single platform credit.
 
 const creditRate = parseFloat(process.env.CREDIT_RATE_BDT || '50');
+const checkoutCurrency = (process.env.STRIPE_CURRENCY || process.env.CHECKOUT_CURRENCY || 'usd').toUpperCase();
 
 export const paymentConfig = {
   currency: 'BDT',
+  checkoutCurrency,
   creditRate, // 1 credit = creditRate BDT
   minTopUpCredits: 1,
   maxTopUpCredits: 1000,
-  providers: ['bkash', 'nagad', 'bank'],
+  providers: ['stripe', 'bkash', 'nagad', 'bank'],
   sandbox: process.env.PAYMENTS_SANDBOX === 'true'
 };
 

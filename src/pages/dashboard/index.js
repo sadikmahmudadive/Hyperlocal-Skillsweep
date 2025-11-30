@@ -15,7 +15,7 @@ import { Button } from '../../components/ui/Button';
 import TopUpModal from '../../components/payments/TopUpModal';
 
 export default function Dashboard() {
-  const { user, loading } = useAuth();
+  const { user, loading, refreshUserData } = useAuth();
   const [topUpOpen, setTopUpOpen] = useState(false);
   const [stats, setStats] = useState({
     skillsOffered: 0,
@@ -44,6 +44,26 @@ export default function Dashboard() {
       setTopUpOpen(true);
     }
   }, [router.isReady, router.query.topup]);
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    let dirty = false;
+    const nextQuery = { ...router.query };
+    if (router.query.topupSuccess) {
+      dirty = true;
+      delete nextQuery.topupSuccess;
+      addToast({ type: 'success', title: 'Payment received', message: 'Credits will appear in a moment.' });
+      refreshUserData?.();
+    }
+    if (router.query.topupCancelled) {
+      dirty = true;
+      delete nextQuery.topupCancelled;
+      addToast({ type: 'info', title: 'Payment cancelled', message: 'You can try again anytime.' });
+    }
+    if (dirty) {
+      router.replace({ pathname: router.pathname, query: nextQuery }, undefined, { shallow: true });
+    }
+  }, [router.isReady, router.query.topupSuccess, router.query.topupCancelled]);
 
   useEffect(() => {
     if (user) {

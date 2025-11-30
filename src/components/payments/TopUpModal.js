@@ -5,20 +5,18 @@ import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
 
 const PROVIDERS = [
-  { id: 'bkash', label: 'bKash' },
-  { id: 'nagad', label: 'Nagad' },
-  { id: 'bank', label: 'Bank (manual)' },
+  { id: 'stripe', label: 'Card (Stripe)', hint: 'Visa, Mastercard, Amex' },
 ];
 
-export default function TopUpModal({ open, onClose, initialCredits = 10, initialProvider = 'bkash' }) {
+export default function TopUpModal({ open, onClose, initialCredits = 10, initialProvider = 'stripe' }) {
   const [provider, setProvider] = useState(initialProvider);
   const [credits, setCredits] = useState(initialCredits);
   const [loading, setLoading] = useState(false);
-  const [confirming, setConfirming] = useState(false);
   const [intent, setIntent] = useState(null);
   const [config, setConfig] = useState(null);
+  const [redirecting, setRedirecting] = useState(false);
   const { addToast } = useToast();
-  const { refreshUserData, user } = useAuth();
+  const { user } = useAuth();
 
   // Safely parse JSON, tolerate empty or non-JSON responses
   const safeParseJson = async (res) => {
@@ -39,9 +37,9 @@ export default function TopUpModal({ open, onClose, initialCredits = 10, initial
       setProvider(initialProvider);
       setCredits(initialCredits);
       setLoading(false);
-      setConfirming(false);
       setIntent(null);
       setConfig(null);
+      setRedirecting(false);
     }
   }, [open, initialCredits, initialProvider]);
 
@@ -54,23 +52,19 @@ export default function TopUpModal({ open, onClose, initialCredits = 10, initial
     }
     try {
       setLoading(true);
+      if (provider !== 'stripe') {
+        addToast({ type: 'error', title: 'Provider unavailable', message: 'Stripe is the only supported provider right now.' });
+        return;
+      }
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      let res = await fetch('/api/payments/topup/init', {
+      const res = await fetch('/api/payments/stripe/checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ credits: Number(credits), provider })
+        body: JSON.stringify({ credits: Number(credits) })
       });
-      // Fallback: some hosts mis-handle POST on API routes; retry GET
-      if (res.status === 405) {
-        const qs = new URLSearchParams({ provider, credits: String(Number(credits) || 0) }).toString();
-        res = await fetch(`/api/payments/topup/init?${qs}`, {
-          method: 'GET',
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-      }
       if (res.status === 401) {
         addToast({ type: 'error', title: 'Sign in required', message: 'Please log in to add credits.' });
         return;
@@ -79,42 +73,16 @@ export default function TopUpModal({ open, onClose, initialCredits = 10, initial
       if (!res.ok || !data?.success) throw new Error((data && data.message) || 'Failed to start top-up');
       setIntent(data.intent);
       setConfig(data.config);
+      if (data.checkoutUrl) {
+        setRedirecting(true);
+        window.location.assign(data.checkoutUrl);
+      } else {
+        addToast({ type: 'info', title: 'Session created', message: 'Follow the Stripe popup to finish payment.' });
+      }
     } catch (e) {
       addToast({ type: 'error', title: 'Top-up init failed', message: e.message });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const confirmTopUp = async () => {
-    if (!intent?.id) {
-      addToast({ type: 'error', title: 'No intent', message: 'Start top-up first' });
-      return;
-    }
-    try {
-      setConfirming(true);
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const res = await fetch('/api/payments/topup/confirm', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ intentId: intent.id })
-      });
-      if (res.status === 401) {
-        addToast({ type: 'error', title: 'Sign in required', message: 'Please log in to confirm top-up.' });
-        return;
-      }
-      const data = await safeParseJson(res);
-      if (!res.ok || !data?.success) throw new Error((data && data.message) || 'Failed to confirm top-up');
-      addToast({ type: 'success', title: 'Credits added', message: `+${data.creditsAdded} credits` });
-      await refreshUserData();
-      onClose?.();
-    } catch (e) {
-      addToast({ type: 'error', title: 'Top-up confirm failed', message: e.message });
-    } finally {
-      setConfirming(false);
     }
   };
 
@@ -134,7 +102,7 @@ export default function TopUpModal({ open, onClose, initialCredits = 10, initial
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <label className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300">Provider</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {PROVIDERS.map((p) => (
                 <button
                   key={p.id}
@@ -142,7 +110,10 @@ export default function TopUpModal({ open, onClose, initialCredits = 10, initial
                   onClick={() => setProvider(p.id)}
                   className={`rounded-2xl px-3 py-2 text-sm font-semibold transition ${provider === p.id ? 'bg-emerald-500 text-white shadow-sm' : 'bg-white/70 text-slate-600 hover:bg-white dark:bg-slate-900/60 dark:text-slate-300'}`}
                 >
-                  {p.label}
+                  <div className="flex flex-col text-left">
+                    <span>{p.label}</span>
+                    {p.hint && <span className="text-[11px] font-normal text-white/80 dark:text-slate-200/80">{p.hint}</span>}
+                  </div>
                 </button>
               ))}
             </div>
@@ -162,7 +133,12 @@ export default function TopUpModal({ open, onClose, initialCredits = 10, initial
         </div>
 
         <div className="rounded-2xl border border-white/60 bg-white/80 p-4 text-sm shadow-inner dark:border-slate-800/60 dark:bg-slate-900/60">
-          {intent ? (
+          {redirecting ? (
+            <div className="flex items-center justify-between">
+              <p className="text-slate-500">Redirecting you to Stripe Checkout…</p>
+              <span className="text-xs text-slate-400">Do not close this tab</span>
+            </div>
+          ) : intent ? (
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-slate-500">Top-up intent ready</p>
@@ -174,17 +150,15 @@ export default function TopUpModal({ open, onClose, initialCredits = 10, initial
               </div>
             </div>
           ) : (
-            <p className="text-slate-500">Choose provider and credits, then continue to calculate amount.</p>
+            <p className="text-slate-500">Choose Stripe and your credit amount, then continue.</p>
           )}
         </div>
 
         <div className="flex items-center justify-end gap-3">
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          {!intent ? (
-            <Button onClick={initTopUp} loading={loading} disabled={loading}>Continue</Button>
-          ) : (
-            <Button onClick={confirmTopUp} loading={confirming} disabled={confirming}>Confirm (sandbox)</Button>
-          )}
+          <Button onClick={initTopUp} loading={loading || redirecting} disabled={loading || redirecting}>
+            {redirecting ? 'Opening Stripe…' : 'Pay with Stripe'}
+          </Button>
         </div>
       </div>
     </Modal>
