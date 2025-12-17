@@ -149,9 +149,11 @@ export default function ChatPage() {
     };
     es.addEventListener('message', refresh);
     es.addEventListener('conversation-start', refresh);
+    es.addEventListener('read', refresh);
     return () => {
       es.removeEventListener('message', refresh);
       es.removeEventListener('conversation-start', refresh);
+      es.removeEventListener('read', refresh);
       es.close();
     };
   }, []);
@@ -190,7 +192,7 @@ export default function ChatPage() {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
-      if (res.ok) setUnreadMap(data.unreadCounts || {});
+      if (res.ok) setUnreadMap(data.unreadCounts || data.perConversation || {});
     } catch (error) {
       console.error('Error fetching unread counts', error);
     }
@@ -563,7 +565,7 @@ export default function ChatPage() {
                           ))}
                         </div>
                       ) : people.length === 0 ? (
-                        <p className='text-sm text-slate-500 italic'>No users found matching '{query}'.</p>
+                        <p className='text-sm text-slate-500 italic'>No users found matching &apos;{query}&apos;.</p>
                       ) : (
                         <div className='space-y-3'>
                           {people.map(u => (

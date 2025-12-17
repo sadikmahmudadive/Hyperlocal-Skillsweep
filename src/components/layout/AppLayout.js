@@ -38,8 +38,17 @@ export default function AppLayout({ children }) {
       }
       return;
     }
+    const getAuthHeaders = () => {
+      try {
+        const token = localStorage.getItem('token');
+        return token ? { Authorization: `Bearer ${token}` } : undefined;
+      } catch (_) {
+        return undefined;
+      }
+    };
+
     // Fetch precise unread initially
-    fetch('/api/chat/unread')
+    fetch('/api/chat/unread', { headers: getAuthHeaders() })
       .then(r => r.ok ? r.json() : { total: 0 })
       .then(d => { if (typeof d?.total === 'number') { setHasUnread(d.total > 0); setUnreadCount(Math.min(99, d.total)); }})
       .catch(() => {});
@@ -56,7 +65,7 @@ export default function AppLayout({ children }) {
         const data = JSON.parse(ev.data);
         if (data?.conversationId) {
           // fetch precise on message to stay accurate
-          fetch('/api/chat/unread')
+          fetch('/api/chat/unread', { headers: getAuthHeaders() })
             .then(r => r.ok ? r.json() : { total: 0 })
             .then(d => { if (typeof d?.total === 'number') { setHasUnread(d.total > 0); setUnreadCount(Math.min(99, d.total)); }})
             .catch(() => { setHasUnread(true); setUnreadCount((c) => Math.min(99, c + 1)); });
@@ -64,10 +73,17 @@ export default function AppLayout({ children }) {
       } catch {}
     });
     es.addEventListener('conversation-start', () => {
-      fetch('/api/chat/unread')
+      fetch('/api/chat/unread', { headers: getAuthHeaders() })
         .then(r => r.ok ? r.json() : { total: 0 })
         .then(d => { if (typeof d?.total === 'number') { setHasUnread(d.total > 0); setUnreadCount(Math.min(99, d.total)); }})
         .catch(() => { setHasUnread(true); setUnreadCount((c) => Math.min(99, c + 1)); });
+    });
+    es.addEventListener('read', () => {
+      // refresh on read receipts so the badge can decrease immediately
+      fetch('/api/chat/unread', { headers: getAuthHeaders() })
+        .then(r => r.ok ? r.json() : { total: 0 })
+        .then(d => { if (typeof d?.total === 'number') { setHasUnread(d.total > 0); setUnreadCount(Math.min(99, d.total)); }})
+        .catch(() => {});
     });
     es.onerror = () => {
       // exponential backoff reconnect
@@ -89,6 +105,25 @@ export default function AppLayout({ children }) {
       reconnectRef.current.timeout = 1000;
       setSseDisconnected(false);
     };
+  }, [isAuthenticated]);
+
+  // Presence heartbeat (best-effort) so others can see you online
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const ping = () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        fetch('/api/presence/ping', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` }
+        }).catch(() => {});
+      } catch (_) {}
+    };
+
+    ping();
+    const t = setInterval(ping, 60000);
+    return () => clearInterval(t);
   }, [isAuthenticated]);
 
   // Clear unread when navigating to chat

@@ -46,6 +46,36 @@ export default function ChatWindow({ conversation, onClose }) {
     }
   };
 
+  const refreshUnreadBestEffort = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch('/api/chat/unread', {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+    } catch (_) {}
+  };
+
+  const markConversationReadBestEffort = async () => {
+    if (!conversation?._id) return;
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      await fetch('/api/chat/read', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ conversationId: conversation._id }),
+      });
+      setMessages((prev) =>
+        prev.map((m) => (String(m?.sender?._id) !== String(user.id) ? { ...m, read: true } : m))
+      );
+      setShowJumpUnread(false);
+      refreshUnreadBestEffort();
+    } catch (_) {}
+  };
+
   // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
@@ -107,6 +137,9 @@ export default function ChatWindow({ conversation, onClose }) {
           });
           if (isAtBottom) {
             requestAnimationFrame(() => scrollToBottom());
+            if (String(data?.message?.sender?._id) !== String(user.id)) {
+              markConversationReadBestEffort();
+            }
           } else {
             setNewMsgCount((n) => n + 1);
           }
@@ -121,15 +154,46 @@ export default function ChatWindow({ conversation, onClose }) {
         }
       } catch {}
     };
+    const onRead = (ev) => {
+      try {
+        const data = JSON.parse(ev.data);
+        if (data?.conversationId !== conversation._id) return;
+        const readerId = String(data?.readerId);
+        if (!readerId) return;
+
+        // If I read, mark other's messages read. If other read, mark my messages read.
+        setMessages((prev) =>
+          prev.map((m) => {
+            const senderId = String(m?.sender?._id);
+            if (!senderId) return m;
+            if (readerId === String(user.id)) {
+              return senderId !== String(user.id) ? { ...m, read: true } : m;
+            }
+            return senderId === String(user.id) ? { ...m, read: true } : m;
+          })
+        );
+      } catch {}
+    };
     es.addEventListener('message', onMessage);
     es.addEventListener('typing', onTyping);
+    es.addEventListener('read', onRead);
     es.onerror = () => { setSseConnected(false); };
     return () => {
       es.removeEventListener('message', onMessage);
       es.removeEventListener('typing', onTyping);
+      es.removeEventListener('read', onRead);
       es.close();
     };
   }, [conversation?._id, isAtBottom]);
+
+  // When user scrolls back to bottom, mark any visible unread messages read.
+  useEffect(() => {
+    if (!conversation?._id) return;
+    if (!isAtBottom) return;
+    const hasUnreadFromOther = messages.some((m) => !m.read && String(m?.sender?._id) !== String(user.id));
+    if (!hasUnreadFromOther) return;
+    markConversationReadBestEffort();
+  }, [isAtBottom, conversation?._id, messages]);
 
   // Clear stale typing indicators
   useEffect(() => {
@@ -200,7 +264,9 @@ export default function ChatWindow({ conversation, onClose }) {
               },
               body: JSON.stringify({ conversationId: conversation._id })
             });
-            fetch('/api/chat/unread').catch(() => {});
+            fetch('/api/chat/unread', {
+              headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+            }).catch(() => {});
           } catch (_) {}
         }
       }

@@ -1,6 +1,7 @@
 import dbConnect from '../../../lib/dbConnect';
 import Conversation from '../../../models/Conversation';
 import { requireAuth } from '../../../middleware/auth';
+import { notifyUsers } from '../../../lib/sse';
 
 async function handler(req, res) {
   if (req.method !== 'PATCH' && req.method !== 'POST') {
@@ -30,7 +31,25 @@ async function handler(req, res) {
     });
 
     if (updated) {
+      // Ensure lastMessage reflects updated read state when applicable
+      if (
+        conversation.lastMessage &&
+        !conversation.lastMessage.read &&
+        String(conversation.lastMessage.sender) !== String(userId)
+      ) {
+        conversation.lastMessage.read = true;
+      }
       await conversation.save();
+    }
+
+    if (updated) {
+      try {
+        notifyUsers(conversation.participants.map((p) => String(p)), 'read', {
+          conversationId,
+          readerId: String(userId),
+          at: Date.now(),
+        });
+      } catch (_) {}
     }
 
     return res.status(200).json({ success: true, updated });

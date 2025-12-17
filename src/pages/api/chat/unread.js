@@ -17,7 +17,13 @@ async function handler(req, res) {
         total += count;
       }
     }
-    res.status(200).json({ total, perConversation });
+    // Keep response compatible with older callers
+    res.status(200).json({
+      total,
+      perConversation,
+      unreadCounts: perConversation,
+      unreadCount: total,
+    });
   } catch (e) {
     console.error('Unread count error:', e);
     res.status(500).json({ message: 'Failed to get unread counts' });
