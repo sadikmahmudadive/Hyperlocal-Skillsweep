@@ -48,7 +48,7 @@ export default function AuthLayout({
           } transition-all duration-700 ease-out`}
         >
           <div className="absolute -left-12 -top-10 hidden h-24 w-24 rounded-full bg-gradient-to-br from-emerald-400/40 via-sky-400/30 to-purple-400/30 blur-2xl lg:block" />
-          <GradientPill className="inline-flex items-center gap-2 bg-white/40 text-emerald-600 backdrop-blur-md dark:bg-slate-900/40 dark:text-emerald-200">
+          <GradientPill className="inline-flex items-center gap-2 bg-[rgba(var(--panel),0.4)] text-emerald-600 backdrop-blur-md dark:text-emerald-200">
             {heroEyebrow}
           </GradientPill>
           <h1 className="mt-6 font-display text-4xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-5xl">
@@ -59,7 +59,7 @@ export default function AuthLayout({
           </p>
           <ul className="mt-6 space-y-3 text-sm text-slate-600 dark:text-slate-300">
             {heroHighlights.map((feature) => (
-              <li key={feature} className="flex items-start gap-3 rounded-2xl bg-white/60 p-3 shadow-inner backdrop-blur-md dark:bg-slate-900/60">
+              <li key={feature} className="flex items-start gap-3 rounded-2xl bg-[rgba(var(--panel),0.55)] p-3 shadow-inner backdrop-blur-md">
                 <span className="mt-0.5 text-emerald-500">✦</span>
                 <span>{feature}</span>
               </li>
@@ -79,7 +79,7 @@ export default function AuthLayout({
           } transition-all duration-700 ease-out delay-150`}
         >
           <div className="pointer-events-none absolute inset-0 rounded-[2rem] bg-gradient-to-br from-white/60 via-white/30 to-transparent shadow-aurora backdrop-blur-3xl dark:from-slate-900/60 dark:via-slate-900/30" />
-          <div className="relative overflow-hidden rounded-[2rem] border border-white/40 bg-white/80 p-8 shadow-soft backdrop-blur-xl dark:border-slate-800/60 dark:bg-slate-900/70 sm:p-10">
+          <div className="relative overflow-hidden rounded-[2rem] border border-soft surface-card p-8 shadow-soft backdrop-blur-xl sm:p-10">
             <div className="absolute -top-16 right-10 h-28 w-28 rounded-full bg-gradient-to-br from-emerald-400/30 via-sky-400/30 to-purple-400/30 blur-2xl" />
             <div className="absolute bottom-[-5rem] left-1/2 h-36 w-36 -translate-x-1/2 rounded-full bg-gradient-to-tr from-emerald-400/10 via-sky-400/10 to-purple-400/15 blur-3xl" />
             <div className="relative">

@@ -86,17 +86,17 @@ export default function SearchResults({ users, loading, onUserSelect, onHire, cu
 
   return (
     <div className="flex h-full min-h-[360px] flex-col overflow-hidden rounded-[28px]">
-      <div className="flex items-center justify-between border-b border-white/60 bg-white/80 px-5 py-4 text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-500 dark:border-slate-800/70 dark:bg-slate-900/60 dark:text-slate-300">
+      <div className="flex items-center justify-between border-b border-soft surface-card px-5 py-4 text-[11px] font-semibold uppercase tracking-[0.32em] text-muted">
         <span>Matches</span>
         <span>{total}</span>
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-white/70 dark:bg-slate-950/40">
+      <div className="flex-1 overflow-y-auto surface-muted">
         {total === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 px-6 py-16 text-center">
             <div className="text-5xl">🔍</div>
-            <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-slate-100">No matches yet</h3>
-            <p className="max-w-xs text-sm text-slate-500 dark:text-slate-300">
+            <h3 className="font-display text-xl font-semibold text-strong">No matches yet</h3>
+            <p className="max-w-xs text-sm text-muted">
               Adjust your filters or try a broader distance to discover more neighbors.
             </p>
           </div>
@@ -109,10 +109,10 @@ export default function SearchResults({ users, loading, onUserSelect, onHire, cu
                 key={userId}
                 type="button"
                 onClick={() => handleUserClick(user)}
-                className="group relative flex w-full flex-col gap-4 px-5 py-4 text-left transition-all duration-200 hover:-translate-y-[1px] hover:bg-white hover:shadow-inner dark:hover:bg-slate-900/60"
+                className="group relative flex w-full flex-col gap-4 px-5 py-4 text-left transition-all duration-200 hover:-translate-y-[1px] hover:bg-[rgba(var(--panel),0.92)] hover:shadow-inner"
               >
                 <div className="flex items-start gap-4">
-                  <div className="relative h-14 w-14 overflow-hidden rounded-2xl ring-2 ring-emerald-300/80 ring-offset-2 ring-offset-white shadow-soft transition-transform duration-200 group-hover:scale-105 dark:ring-offset-slate-900">
+              <div className="border-t border-soft surface-card px-5 py-3 text-center text-xs text-muted">
                     <img
                       src={user.avatar?.url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'U')}&background=0ea5e9&color=fff&size=128&bold=true`}
                       alt={user.name || 'User avatar'}
@@ -123,7 +123,7 @@ export default function SearchResults({ users, loading, onUserSelect, onHire, cu
                   <div className="flex-1 min-w-0 space-y-2">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <h3 className="flex items-center gap-2 font-display text-lg font-semibold text-slate-900 dark:text-slate-100">
+                        <h3 className="flex items-center gap-2 font-display text-lg font-semibold text-strong">
                           <span className="truncate">{user.name}</span>
                           {user.online && (
                             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">
@@ -132,7 +132,7 @@ export default function SearchResults({ users, loading, onUserSelect, onHire, cu
                             </span>
                           )}
                         </h3>
-                        <p className="text-sm text-slate-500 line-clamp-2 dark:text-slate-300">
+                        <p className="text-sm text-muted line-clamp-2">
                           {user.bio || 'This neighbor hasn\'t added a bio yet, but is ready to swap skills!'}
                         </p>
                       </div>
@@ -219,7 +219,7 @@ export default function SearchResults({ users, loading, onUserSelect, onHire, cu
       </div>
 
       {total > 0 && (
-        <div className="border-t border-white/60 bg-white/70 px-5 py-3 text-center text-xs text-slate-500 dark:border-slate-800/70 dark:bg-slate-900/60 dark:text-slate-300">
+        <div className="border-t border-soft surface-card px-5 py-3 text-center text-xs text-muted">
           Tip: click any profile to view details, start a chat, or bookmark it for later swaps.
         </div>
       )}

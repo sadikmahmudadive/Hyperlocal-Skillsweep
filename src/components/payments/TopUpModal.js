@@ -89,7 +89,7 @@ export default function TopUpModal({ open, onClose, initialCredits = 10, initial
   return (
     <Modal open={open} onClose={onClose} title="Add credits">
       <div className="space-y-5">
-        <div className="flex items-center justify-between rounded-2xl bg-white/70 p-3 shadow-inner dark:bg-slate-900/60">
+        <div className="flex items-center justify-between rounded-2xl surface-card p-3 shadow-inner">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Current balance</p>
             <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">{user?.credits ?? 0} credits</p>
@@ -108,7 +108,7 @@ export default function TopUpModal({ open, onClose, initialCredits = 10, initial
                   key={p.id}
                   type="button"
                   onClick={() => setProvider(p.id)}
-                  className={`rounded-2xl px-3 py-2 text-sm font-semibold transition ${provider === p.id ? 'bg-emerald-500 text-white shadow-sm' : 'bg-white/70 text-slate-600 hover:bg-white dark:bg-slate-900/60 dark:text-slate-300'}`}
+                  className={`rounded-2xl px-3 py-2 text-sm font-semibold transition ${provider === p.id ? 'bg-emerald-500 text-white shadow-sm' : 'bg-[rgba(var(--panel),0.62)] text-secondary hover:bg-[rgba(var(--panel),0.8)]'}`}
                 >
                   <div className="flex flex-col text-left">
                     <span>{p.label}</span>
@@ -132,7 +132,7 @@ export default function TopUpModal({ open, onClose, initialCredits = 10, initial
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/60 bg-white/80 p-4 text-sm shadow-inner dark:border-slate-800/60 dark:bg-slate-900/60">
+        <div className="rounded-2xl border border-soft surface-card p-4 text-sm shadow-inner">
           {redirecting ? (
             <div className="flex items-center justify-between">
               <p className="text-slate-500">Redirecting you to Stripe Checkout…</p>

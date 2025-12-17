@@ -179,7 +179,7 @@ function EditForm({ submitting, onSubmit, initialRating, initialComment, onDelet
               key={r}
               type="button"
               onClick={() => setRating(r)}
-              className={`h-9 w-9 rounded-full border transition ${r <= rating ? 'bg-yellow-400 border-yellow-500 text-white' : 'bg-white/80 dark:bg-slate-900/60 border-soft text-muted hover:bg-white dark:hover:bg-slate-800/40'}`}
+              className={`h-9 w-9 rounded-full border transition ${r <= rating ? 'bg-yellow-400 border-yellow-500 text-white' : 'bg-[rgba(var(--panel),0.78)] border-soft text-muted hover:bg-[rgba(var(--panel),0.92)]'}`}
             >
               {r <= rating ? '⭐' : '☆'}
             </button>

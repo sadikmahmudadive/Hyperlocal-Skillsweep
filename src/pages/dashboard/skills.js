@@ -207,7 +207,7 @@ export default function SkillsManagement() {
           {user?.skillsOffered?.length ? (
             <div className="space-y-4">
               {user.skillsOffered.map((skill) => (
-                <div key={skill._id} className="flex flex-col gap-3 rounded-2xl border border-white/60 bg-white/60 p-4 shadow-inner transition dark:border-slate-800/60 dark:bg-slate-900/50 sm:flex-row sm:items-center sm:justify-between">
+                <div key={skill._id} className="flex flex-col gap-3 rounded-2xl border border-soft surface-muted p-4 shadow-inner transition sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-2">
                     <h3 className="font-semibold text-slate-900 dark:text-slate-100">{skill.name}</h3>
                     {skill.description && <p className="text-sm text-slate-500 dark:text-slate-300">{skill.description}</p>}
@@ -228,7 +228,7 @@ export default function SkillsManagement() {
               ))}
             </div>
           ) : (
-            <div className="rounded-2xl border border-dashed border-white/60 bg-white/40 p-6 text-sm text-slate-500 dark:border-slate-800/60 dark:bg-slate-900/40 dark:text-slate-300">
+            <div className="rounded-2xl border border-dashed border-soft bg-[rgba(var(--panel),0.45)] p-6 text-sm text-muted">
               No offerings yet. Add a skill above to showcase your talents.
             </div>
           )}
@@ -242,7 +242,7 @@ export default function SkillsManagement() {
           {user?.skillsNeeded?.length ? (
             <div className="space-y-4">
               {user.skillsNeeded.map((skill) => (
-                <div key={skill._id} className="flex flex-col gap-3 rounded-2xl border border-white/60 bg-white/60 p-4 shadow-inner transition dark:border-slate-800/60 dark:bg-slate-900/50 sm:flex-row sm:items-center sm:justify-between">
+                <div key={skill._id} className="flex flex-col gap-3 rounded-2xl border border-soft surface-muted p-4 shadow-inner transition sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-2">
                     <h3 className="font-semibold text-slate-900 dark:text-slate-100">{skill.name}</h3>
                     {skill.description && <p className="text-sm text-slate-500 dark:text-slate-300">{skill.description}</p>}
@@ -260,7 +260,7 @@ export default function SkillsManagement() {
               ))}
             </div>
           ) : (
-            <div className="rounded-2xl border border-dashed border-white/60 bg-white/40 p-6 text-sm text-slate-500 dark:border-slate-800/60 dark:bg-slate-900/40 dark:text-slate-300">
+            <div className="rounded-2xl border border-dashed border-soft bg-[rgba(var(--panel),0.45)] p-6 text-sm text-muted">
               No wish-list items yet. Add a skill you&apos;d love to learn to inspire matches.
             </div>
           )}

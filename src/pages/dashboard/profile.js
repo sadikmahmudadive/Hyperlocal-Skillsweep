@@ -393,7 +393,7 @@ export default function EditProfile() {
                 <span className="font-semibold">Uploading avatar…</span>
                 <span>{uploadProgress}%</span>
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-white/50 dark:bg-slate-900/40">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-[rgba(var(--panel-muted),0.65)]">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-sky-400 to-purple-400 transition-all duration-300"
                   style={{ width: `${uploadProgress}%` }}
@@ -413,7 +413,7 @@ export default function EditProfile() {
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
             onDrop={onDrop}
-            className={`group relative flex flex-col gap-6 rounded-3xl border-2 border-dashed border-white/60 bg-white/40 p-6 transition-all duration-300 dark:border-slate-800/60 dark:bg-slate-900/40 sm:flex-row sm:items-center ${isDragging ? 'border-emerald-400 bg-emerald-400/10 dark:border-emerald-500' : ''}`}
+            className={`group relative flex flex-col gap-6 rounded-3xl border-2 border-dashed border-soft bg-[rgba(var(--panel),0.45)] p-6 transition-all duration-300 sm:flex-row sm:items-center ${isDragging ? 'border-emerald-400 bg-emerald-400/10 dark:border-emerald-500' : ''}`}
           >
             <button
               type="button"

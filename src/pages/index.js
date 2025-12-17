@@ -27,7 +27,7 @@ export default function Home() {
             <p className="text-lg text-slate-600 dark:text-slate-300">
               Discover people nearby who can teach, fix, or craft exactly what you&apos;re looking for. Earn time credits while you help someone else.
             </p>
-            <div className="w-full rounded-3xl border border-white/60 bg-white/80 p-2 shadow-soft backdrop-blur-xl dark:border-slate-800/70 dark:bg-slate-900/70">
+            <div className="w-full rounded-3xl border border-soft surface-card p-2 shadow-soft backdrop-blur-xl">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <input
                   type="text"
@@ -126,7 +126,7 @@ export default function Home() {
 
       {/* Categories ribbon */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="overflow-hidden rounded-3xl border border-white/60 bg-white/80 p-6 shadow-soft backdrop-blur-xl dark:border-slate-800/70 dark:bg-slate-900/60">
+        <div className="overflow-hidden rounded-3xl border border-soft surface-card p-6 shadow-soft backdrop-blur-xl">
           <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-slate-600 dark:text-slate-300">
             {['Bike repair', 'Language exchange', 'Home cooking', 'Kid tutoring', 'Pet care', 'Music lessons', 'Craft workshops'].map((item) => (
               <span key={item} className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-200/60 via-sky-200/50 to-purple-200/50 px-4 py-1.5 text-sm font-medium text-emerald-700 dark:from-emerald-500/20 dark:via-sky-500/20 dark:to-purple-500/20 dark:text-emerald-200">

@@ -296,10 +296,10 @@ export default function Dashboard() {
         subtitle="Track your swaps, polish your profile, and keep the momentum going."
         actions={(
           <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-            <GradientPill className="bg-white/80 text-slate-600 shadow-soft dark:bg-slate-900/70 dark:text-slate-200">
+            <GradientPill className="bg-[rgba(var(--panel),0.78)] text-secondary shadow-soft">
               <span className="text-[10px] tracking-[0.5em] text-emerald-600 dark:text-emerald-200">Credits</span>
-              <span className="text-xs font-semibold tracking-normal text-slate-700 dark:text-slate-100">{stats.credits}</span>
-              <span className="text-[11px] text-slate-400">⏱️</span>
+              <span className="text-xs font-semibold tracking-normal text-strong">{stats.credits}</span>
+              <span className="text-[11px] text-soft">⏱️</span>
             </GradientPill>
             <Button
               type="button"
@@ -345,7 +345,7 @@ export default function Dashboard() {
             <InteractiveCard className="h-full transition hover:-translate-y-1 hover:shadow-elevated">
               <div className={`pointer-events-none absolute right-0 top-0 h-full w-40 translate-x-1/3 bg-gradient-to-br opacity-60 blur-3xl ${action.accent}`} />
               <div className="relative z-[1] flex items-start gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/70 text-2xl shadow-inner dark:bg-slate-900/60">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[rgba(var(--panel),0.65)] text-2xl shadow-inner">
                   {action.icon}
                 </div>
                 <div className="space-y-2">
@@ -359,7 +359,7 @@ export default function Dashboard() {
         <InteractiveCard highlight className="h-full p-0 xl:col-span-3">
           <div className="flex flex-col justify-between gap-6 rounded-[calc(theme(borderRadius.3xl)-2px)] bg-gradient-to-br from-emerald-400/20 via-sky-400/20 to-purple-400/20 p-8 text-slate-900 dark:text-slate-100 dark:from-emerald-500/15 dark:via-sky-500/15 dark:to-purple-500/15 md:flex-row md:items-center">
             <div className="space-y-2">
-              <GradientPill className="bg-white/20 text-slate-900 dark:bg-slate-900/40 dark:text-slate-100">
+              <GradientPill className="bg-[rgba(var(--panel),0.32)] text-strong">
                 Community kudos
               </GradientPill>
               <h3 className="font-display text-2xl font-semibold text-strong">You&apos;ve completed {stats.completedTransactions} exchanges</h3>
@@ -380,7 +380,7 @@ export default function Dashboard() {
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <InteractiveCard className="xl:col-span-2 p-0">
           <div className="flex h-full flex-col overflow-hidden rounded-[calc(theme(borderRadius.3xl)-2px)]">
-            <div className="flex flex-col gap-2 border-b border-white/60 bg-white/60 px-6 py-5 dark:border-slate-800/60 dark:bg-slate-900/50 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-2 border-b border-soft surface-card px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="font-display text-xl font-semibold text-strong">Recent activity</h3>
                 <p className="copy-subtle text-soft">Tap a swap to revisit the conversation or leave a review.</p>
@@ -391,14 +391,14 @@ export default function Dashboard() {
                 </Link>
               )}
             </div>
-            <div className="border-b border-white/60 bg-white/40 px-6 py-3 dark:border-slate-800/60 dark:bg-slate-900/40">
+            <div className="border-b border-soft bg-[rgba(var(--panel),0.45)] px-6 py-3">
               <div className="flex flex-wrap gap-2">
                 {['all','pending','confirmed','in-progress','completed'].map((status) => (
                   <button
                     key={status}
                     type="button"
                     onClick={() => setActivityFilter(status)}
-                    className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] transition ${activityFilter === status ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/40' : 'bg-white/70 text-slate-500 hover:bg-white dark:bg-slate-900/60 dark:text-slate-300'}`}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] transition ${activityFilter === status ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/40' : 'bg-[rgba(var(--panel),0.62)] text-muted hover:bg-[rgba(var(--panel),0.78)]'}`}
                   >
                     {status.replace('-', ' ')}
                   </button>
@@ -419,32 +419,32 @@ export default function Dashboard() {
                   ))}
                 </div>
               ) : filteredActivity.length > 0 ? (
-                <ul className="divide-y divide-white/50 dark:divide-slate-800/60">
+                <ul className="divide-y divide-[rgba(var(--border-soft),0.35)]">
                   {filteredActivity.map((transaction) => {
                     const otherUser = getOtherUser(transaction, user.id);
                     const isProvider = transaction.provider._id === user.id;
                     return (
-                      <li key={transaction._id} className="group px-6 py-5 transition hover:bg-white/60 dark:hover:bg-slate-900/40">
+                      <li key={transaction._id} className="group px-6 py-5 transition hover:bg-[rgba(var(--panel),0.45)]">
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                           <div className="flex flex-1 items-start gap-4">
                             <div className={`mt-1 inline-flex h-11 w-11 items-center justify-center rounded-2xl text-lg shadow-inner ${isProvider ? 'bg-emerald-500/15 text-emerald-600 dark:bg-emerald-500/25 dark:text-emerald-200' : 'bg-sky-500/15 text-sky-600 dark:bg-sky-500/25 dark:text-sky-200'}`}>
                               {isProvider ? '↑' : '↓'}
                             </div>
                             <div className="space-y-2">
-                              <h4 className="font-semibold text-slate-900 dark:text-slate-100">{formatTransactionType(transaction, user.id)}</h4>
-                              <p className="text-sm text-slate-500 dark:text-slate-300">with {otherUser?.name || 'a neighbor'}</p>
+                              <h4 className="font-semibold text-strong">{formatTransactionType(transaction, user.id)}</h4>
+                              <p className="text-sm text-muted">with {otherUser?.name || 'a neighbor'}</p>
                               <div className="flex flex-wrap items-center gap-2 text-xs">
                                 <span className={`rounded-full px-3 py-1 font-semibold ${getTransactionStatusColor(transaction.status)}`}>
                                   {transaction.status.replace('-', ' ')}
                                 </span>
                                 {transaction.skill?.name && (
-                                  <span className="rounded-full bg-slate-100/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:bg-slate-800/60 dark:text-slate-300">
+                                  <span className="rounded-full bg-[rgba(var(--panel),0.55)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted">
                                     {transaction.skill.name}
                                   </span>
                                 )}
                               </div>
                               {transaction.scheduledDate && (
-                                <p className="text-xs text-slate-400 dark:text-slate-500">
+                                  <p className="text-xs text-soft">
                                   Scheduled for {new Date(transaction.scheduledDate).toLocaleDateString()}
                                 </p>
                               )}
@@ -461,7 +461,7 @@ export default function Dashboard() {
                               type="button"
                               variant="secondary"
                               size="sm"
-                              className="whitespace-nowrap px-4 py-1 text-[11px] font-semibold tracking-[0.28em] text-slate-500 hover:text-slate-900 dark:text-slate-300"
+                              className="whitespace-nowrap px-4 py-1 text-[11px] font-semibold tracking-[0.28em]"
                               onClick={() => router.push(`/profile/${otherUser?._id}`)}
                             >
                               Profile
@@ -483,8 +483,8 @@ export default function Dashboard() {
               ) : (
                 <div className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center">
                   <div className="text-5xl">📋</div>
-                  <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-slate-100">No recent activity</h3>
-                  <p className="max-w-sm text-sm text-slate-500 dark:text-slate-300">Start a new exchange to see it appear here. You can scout the map or reconnect with your favorites.</p>
+                  <h3 className="font-display text-xl font-semibold text-strong">No recent activity</h3>
+                  <p className="max-w-sm text-sm text-muted">Start a new exchange to see it appear here. You can scout the map or reconnect with your favorites.</p>
                   <Button
                     href="/search"
                     size="sm"
@@ -505,31 +505,31 @@ export default function Dashboard() {
             <p className="text-sm text-slate-500 dark:text-slate-300">See how your exchanges add up across the neighborhood.</p>
           </div>
           <div className="space-y-4">
-            <div className="flex items-center justify-between rounded-2xl bg-white/80 p-4 shadow-inner dark:bg-slate-900/60">
+            <div className="flex items-center justify-between rounded-2xl surface-card p-4 shadow-inner">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Total swaps</p>
-                <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">{stats.completedTransactions}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-soft">Total swaps</p>
+                <p className="mt-1 text-lg font-semibold text-strong">{stats.completedTransactions}</p>
               </div>
               <span className="rounded-full bg-emerald-500/15 px-4 py-1 text-sm font-semibold text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">Leveling up</span>
             </div>
-            <div className="flex items-center justify-between rounded-2xl bg-white/80 p-4 shadow-inner dark:bg-slate-900/60">
+            <div className="flex items-center justify-between rounded-2xl surface-card p-4 shadow-inner">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Skills shared</p>
-                <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">{stats.skillsOffered}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-soft">Skills shared</p>
+                <p className="mt-1 text-lg font-semibold text-strong">{stats.skillsOffered}</p>
               </div>
               <span className="rounded-full bg-sky-500/15 px-4 py-1 text-sm font-semibold text-sky-600 dark:bg-sky-500/20 dark:text-sky-200">Diverse set</span>
             </div>
-            <div className="flex items-center justify-between rounded-2xl bg-white/80 p-4 shadow-inner dark:bg-slate-900/60">
+            <div className="flex items-center justify-between rounded-2xl surface-card p-4 shadow-inner">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Avg rating</p>
-                <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">{Number(stats.rating || 0).toFixed(1)}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-soft">Avg rating</p>
+                <p className="mt-1 text-lg font-semibold text-strong">{Number(stats.rating || 0).toFixed(1)}</p>
               </div>
               <span className="rounded-full bg-amber-500/15 px-4 py-1 text-sm font-semibold text-amber-600 dark:bg-amber-500/20 dark:text-amber-200">Keep shining</span>
             </div>
-            <div className="flex items-center justify-between rounded-2xl bg-white/80 p-4 shadow-inner dark:bg-slate-900/60">
+            <div className="flex items-center justify-between rounded-2xl surface-card p-4 shadow-inner">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">Credits earned</p>
-                <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">+{stats.completedTransactions * 2}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-soft">Credits earned</p>
+                <p className="mt-1 text-lg font-semibold text-strong">+{stats.completedTransactions * 2}</p>
               </div>
               <span className="rounded-full bg-purple-500/15 px-4 py-1 text-sm font-semibold text-purple-600 dark:bg-purple-500/20 dark:text-purple-200">Spend wisely</span>
             </div>
@@ -549,7 +549,7 @@ export default function Dashboard() {
               <p className="mt-2 text-sm text-slate-500 dark:text-slate-300">Peek at what neighbors are saying about your exchanges.</p>
             </div>
             {user && (
-              <Link href={`/profile/${user.id || user._id}#reviews`} className="pill bg-white/80 px-4 py-1 text-[11px] text-slate-500 hover:bg-white dark:bg-slate-900/60 dark:text-slate-300">
+              <Link href={`/profile/${user.id || user._id}#reviews`} className="pill px-4 py-1 text-[11px]">
                 View all
               </Link>
             )}
@@ -567,7 +567,7 @@ export default function Dashboard() {
                   <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200">{reviewsSummary.count} reviews</span>
                 </div>
                 {reviewsSummary.last && (
-                  <div className="space-y-3 rounded-2xl border border-white/60 bg-white/80 p-4 shadow-inner dark:border-slate-800/60 dark:bg-slate-900/60">
+                  <div className="space-y-3 rounded-2xl border border-soft surface-card p-4 shadow-inner">
                     <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                       <span className="text-amber-500 text-base">⭐</span>
                       <span className="font-semibold text-slate-900 dark:text-slate-100">{reviewsSummary.last.rating}/5</span>
@@ -605,7 +605,7 @@ export default function Dashboard() {
               'Log completed swaps so credits flow and ratings climb.',
               'Bookmark standout partners to build a trusted go-to crew.',
             ].map((tip) => (
-              <div key={tip} className="flex items-start gap-3 rounded-2xl bg-white/80 p-4 text-sm text-slate-600 shadow-inner dark:bg-slate-900/60 dark:text-slate-200">
+              <div key={tip} className="flex items-start gap-3 rounded-2xl surface-card p-4 text-sm text-secondary shadow-inner">
                 <span className="mt-1 text-emerald-500">✓</span>
                 <span>{tip}</span>
               </div>

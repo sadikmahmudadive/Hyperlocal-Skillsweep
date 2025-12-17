@@ -196,19 +196,33 @@ a {
   }
   
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 bg-white/80 text-gray-900 px-4 py-2 rounded-full border border-gray-200 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-slate-900/50 dark:text-slate-100 dark:border-slate-700 dark:hover:border-slate-600;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full border focus:outline-none focus:ring-2 focus:ring-slate-200 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    background-color: rgba(var(--panel), 0.78);
+    border-color: rgba(var(--border-soft), 0.45);
+    color: rgb(var(--text-strong));
+  }
+
+  .btn-secondary:hover {
+    border-color: rgba(var(--border-soft), 0.65);
   }
   
   .card {
-    @apply bg-white/80 rounded-2xl shadow-soft border border-white/60 p-6 dark:bg-slate-900/60 dark:border-slate-800 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70 dark:supports-[backdrop-filter]:bg-slate-900/60 transition-transform duration-300;
+    @apply rounded-2xl shadow-soft border p-6 backdrop-blur-xl transition-transform duration-300;
+    background-color: rgba(var(--panel), 0.82);
+    border-color: rgba(var(--border-soft), 0.4);
   }
   
   .input-field {
-    @apply w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed bg-white/80 dark:bg-slate-900/70 dark:border-slate-700 dark:text-slate-100 dark:focus:ring-emerald-400 transition-all duration-200;
+    @apply w-full px-3 py-2 border rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200;
+    background-color: rgba(var(--panel), 0.78);
+    border-color: rgba(var(--border-soft), 0.45);
+    color: rgb(var(--text-strong));
   }
   
   .glass-panel {
-    @apply bg-white/70 dark:bg-slate-900/50 backdrop-blur-md border border-white/60 dark:border-slate-800 shadow-sm;
+    @apply backdrop-blur-md border shadow-sm;
+    background-color: rgba(var(--panel), 0.68);
+    border-color: rgba(var(--border-soft), 0.4);
   }
 
   .pill {

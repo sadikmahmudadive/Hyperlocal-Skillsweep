@@ -9,7 +9,7 @@ export default function RefreshIndicator() {
         isRefreshing ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
       }`}
     >
-      <div className="glass-panel flex flex-col gap-2 rounded-2xl border border-white/60 px-4 py-3 shadow-soft dark:border-slate-800/80">
+      <div className="glass-panel flex flex-col gap-2 rounded-2xl border border-soft px-4 py-3 shadow-soft">
         <div className="flex items-center gap-3">
           <span className="relative inline-flex h-6 w-6 items-center justify-center">
             <span
@@ -24,7 +24,7 @@ export default function RefreshIndicator() {
             <p className="text-xs font-medium text-primary">{message || 'Refreshing app data…'}</p>
           </div>
         </div>
-        <div className="h-1 overflow-hidden rounded-full bg-white/50 dark:bg-slate-800/80">
+        <div className="h-1 overflow-hidden rounded-full bg-[rgba(var(--panel-muted),0.65)]">
           <span className={`refresh-bar block h-full w-1/2 bg-gradient-to-r from-emerald-400 via-sky-400 to-purple-400 ${isRefreshing ? '' : 'opacity-0'}`} />
         </div>
       </div>

@@ -346,7 +346,7 @@ export default function Transactions() {
             <ul className="divide-y divide-slate-200/60 dark:divide-slate-800/70">
               {filteredTransactions.map((transaction) => (
                 <li key={transaction._id}>
-                  <div className="px-4 py-4 sm:px-6 hover:bg-white/40 dark:hover:bg-slate-800/30">
+                  <div className="px-4 py-4 sm:px-6 hover:bg-[rgba(var(--panel),0.45)]">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
                         <div className="flex-shrink-0">
@@ -540,7 +540,7 @@ function ReviewForm({ submitting, onSubmit, initialRating, initialComment, onDel
               type="button"
               aria-label={`${r} star${r>1?'s':''}`}
               onClick={() => setRating(r)}
-              className={`h-9 w-9 rounded-full flex items-center justify-center border transition ${r <= rating ? 'bg-yellow-400 border-yellow-500 text-white' : 'bg-white/80 dark:bg-slate-900/60 border-soft text-muted hover:bg-white dark:hover:bg-slate-800/40'}`}
+              className={`h-9 w-9 rounded-full flex items-center justify-center border transition ${r <= rating ? 'bg-yellow-400 border-yellow-500 text-white' : 'bg-[rgba(var(--panel),0.78)] border-soft text-muted hover:bg-[rgba(var(--panel),0.92)]'}`}
             >
               {r <= rating ? '⭐' : '☆'}
             </button>

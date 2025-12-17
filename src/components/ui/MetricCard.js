@@ -1,6 +1,6 @@
 export default function MetricCard({ icon, label, value, helpText, trend }) {
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-white/60 bg-white/80 p-5 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-elevated dark:border-slate-800/70 dark:bg-slate-900/60 surface-card">
+    <div className="group relative overflow-hidden rounded-2xl border border-soft surface-card p-5 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-elevated">
       <div className="pointer-events-none absolute -top-12 right-0 h-32 w-32 rounded-full bg-gradient-to-br from-emerald-300/20 via-sky-300/15 to-purple-300/15 blur-3xl transition-opacity duration-300 group-hover:opacity-100" />
       <div className="relative z-[1] flex items-start justify-between gap-4">
         <div className="space-y-3">

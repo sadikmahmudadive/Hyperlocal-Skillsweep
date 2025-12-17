@@ -142,7 +142,7 @@ export default function AppLayout({ children }) {
         <div className="absolute bottom-[-18%] left-[-14%] h-[32rem] w-[32rem] rounded-full bg-gradient-to-br from-purple-400/18 via-sky-400/16 to-emerald-400/22 blur-[130px]" />
       </div>
       {/* Top Nav */}
-      <header className="sticky top-0 z-40 border-b border-white/40 bg-white/70 backdrop-blur-xl supports-[backdrop-filter]:bg-white/55 dark:border-slate-900/70 dark:bg-slate-950/70">
+      <header className="sticky top-0 z-40 border-b border-soft bg-[rgba(var(--panel),0.72)] backdrop-blur-xl supports-[backdrop-filter]:bg-[rgba(var(--panel),0.55)]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between gap-6">
             <div className="flex items-center gap-6 lg:gap-8">
@@ -248,7 +248,7 @@ export default function AppLayout({ children }) {
 
         {/* Mobile menu */}
         {mobileOpen && (
-          <div className="md:hidden border-t border-slate-200 bg-white/90 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/80">
+          <div className="md:hidden border-t border-soft bg-[rgba(var(--panel),0.84)] backdrop-blur-xl">
             <div className="space-y-1 px-4 py-3">
               {navLinks.map((l) => (
                 (!l.auth || isAuthenticated) && (
@@ -312,7 +312,7 @@ export default function AppLayout({ children }) {
       </main>
 
       {/* Footer */}
-      <footer className="relative border-t border-white/40 bg-white/70 py-8 backdrop-blur-xl dark:border-slate-900/70 dark:bg-slate-950/70">
+      <footer className="relative border-t border-soft bg-[rgba(var(--panel),0.72)] py-8 backdrop-blur-xl">
         <div className="pointer-events-none absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
         <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 text-sm text-soft sm:flex-row sm:items-center sm:justify-between">
           <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.32em] text-soft">

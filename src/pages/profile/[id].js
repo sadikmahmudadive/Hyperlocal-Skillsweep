@@ -615,7 +615,7 @@ function HireForm({ skills, prefill, availableCredits, submitting, onSubmit }) {
               max={maxDiscountCredits} 
               value={credits} 
               onChange={(e) => setCredits(Math.min(maxDiscountCredits, Number(e.target.value)))} 
-              className="w-16 border rounded-md p-1 text-center text-sm bg-white/80 dark:bg-slate-900/70 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100"
+              className="w-16 border border-soft rounded-md p-1 text-center text-sm bg-[rgba(var(--panel),0.78)] text-strong"
             />
           </div>
           <div className="text-xs text-muted mt-1">
