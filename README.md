@@ -1,62 +1,178 @@
 # Hyperlocal SkillSwap
 
-A Next.js app for swapping skills locally with chat, reviews, and transactions.
+Hyperlocal SkillSwap is a Next.js web app for discovering nearby people, swapping skills, chatting, and completing credit-based transactions with reviews.
+
+## User manual (how to use the web app)
+
+### 1) Create an account
+
+1. Open the app.
+2. Go to **Register**.
+3. Create your account and sign in.
+
+### 2) Complete your profile
+
+From **Dashboard → Profile** you can:
+
+- Add your photo/avatar.
+- Add a short bio (what you do, what you’re looking for).
+- Set your location (used for distance + map-based discovery).
+
+Tip: a complete profile gets better matches.
+
+### 3) Add your skills
+
+From **Dashboard → Skills**:
+
+- Add skills you can offer.
+- Add skills you need.
+
+These are used to power matching and discovery.
+
+### 4) Find people to swap skills with
+
+Go to **Search**:
+
+- Browse **Matches**.
+- Open any profile to view details.
+- (If available) Use the map to see neighbors and skill pins.
+
+### 5) Favorite/bookmark people
+
+In **Matches**, use the heart button to favorite someone. This helps you keep track of people you may want to contact later.
+
+### 6) Start a chat
+
+From a match card or a profile:
+
+1. Click **Chat**.
+2. Send messages in real time.
+
+Chat behavior notes:
+
+- The app uses realtime updates for incoming messages.
+- Read/unread status updates as you view conversations.
+
+### 7) Hire / create a transaction
+
+When you want to request work (or confirm a swap):
+
+1. Choose a user.
+2. Click **Hire** (or create a transaction from the relevant flow).
+3. Confirm details and proceed.
+
+### 8) Credits / top-up (optional)
+
+If your deployment enables payments, you can top up credits using Stripe.
+
+- In development/test mode, Stripe runs with test keys.
+- In production, configure Stripe keys and webhook for confirmations.
+
+### 9) Confirm completion + leave reviews
+
+After a transaction is completed:
+
+- Confirm completion (where prompted).
+- Leave a review and rating.
+
+Reviews contribute to the rating shown on match cards.
+
+## Local development (run on your machine)
+
+### Prerequisites
+
+- Node.js 18+
+- A MongoDB connection string
+- Cloudinary account (for uploads) — optional but recommended
+- Mapbox token (for maps) — optional
+- Stripe (for top-up/payments) — optional
+
+### 1) Install dependencies
+
+```bash
+npm install
+```
+
+### 2) Create `.env.local`
+
+Add these variables:
+
+Required:
+
+- `MONGODB_URI` — MongoDB connection string
+- `JWT_SECRET` — JWT signing secret
+
+Recommended (uploads):
+
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
+
+Optional (maps):
+
+- `NEXT_PUBLIC_MAPBOX_TOKEN` (client)
+- `MAPBOX_TOKEN` (server, if you prefer using a non-public token)
+
+Optional (payments / Stripe):
+
+- `STRIPE_SECRET_KEY`
+- `STRIPE_PUBLISHABLE_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `STRIPE_CURRENCY` (defaults to `usd`)
+
+Optional (password reset emails):
+
+- `SENDGRID_API_KEY`
+- `SENDGRID_FROM`
+- `NEXT_PUBLIC_BASE_URL` (used to build reset links)
+
+Optional (credits tuning):
+
+- `CREDIT_RATE_BDT` (defaults to `50`)
+
+Optional (blockchain integration toggle):
+
+- `ENABLE_CHAIN` (`true`/`false`)
+- `CHAIN_RPC_URL`
+- `CHAIN_PRIVATE_KEY`
+- `CHAIN_NAME`
+
+### 3) Start the dev server
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000)
 
 ## Realtime chat (SSE)
 
 The app uses Server-Sent Events (SSE) for near-realtime chat updates.
 
-- Auth: An HttpOnly cookie (`sseso`) is set on login/register to authenticate the SSE stream without headers. The middleware accepts this cookie.
-- Endpoint: `GET /api/events/stream` streams events.
-- Events:
-  - `conversation-start`: when a conversation is created or resumed
-  - `message`: when a new message is sent (includes message payload)
-- Keepalive: a ping comment is sent every 25s to avoid idle timeouts.
+- Auth: an HttpOnly cookie (`sseso`) is set on login/register so the SSE stream can authenticate without headers.
+- Endpoint: `GET /api/events/stream`
+- Keepalive: a ping comment is sent periodically to avoid idle timeouts.
 
 Unread counts
 
-- `GET /api/chat/unread` returns `{ total, perConversation }` for precise badges.
+- `GET /api/chat/unread` returns `{ total, perConversation }`.
 
 Limits & deployment notes
 
 - The SSE broker is in-memory and scoped to a single Node.js process. On serverless or multi-instance hosting, events won’t fan out across instances by default.
 - For production-grade realtime, use a shared pub/sub (Redis, Pusher, Ably) or fall back to polling.
 
-## Local development
-
-1. Install dependencies and run the dev server.
-2. Configure environment variables: `MONGODB_URI`, `JWT_SECRET`, `CLOUDINARY_*`, `NEXT_PUBLIC_MAPBOX_TOKEN` (or use MapLibre).
-3. Login/register to start the `sseso` cookie and open `/chat`.
-
 ## Deploying to Vercel
 
-1. **Fork or push** this repository to your own GitHub/GitLab account so Vercel can access it.
-2. In the [Vercel dashboard](https://vercel.com/dashboard), click **New Project** and import the repo.
-3. On the configuration screen:
-   - Framework preset: **Next.js** (auto-detected).
-   - Install command: `npm ci`
-   - Build command: `npm run build`
-   - Output directory: leave blank (Vercel handles `.next`).
-4. Add the required environment variables under **Settings → Environment Variables** for each environment (Preview/Production):
+1. Import the repo into Vercel.
+2. Use:
+   - Install: `npm ci`
+   - Build: `npm run build`
+   - Output directory: leave blank
+3. Add environment variables (same as `.env.local`) in **Settings → Environment Variables**.
 
-   | Key | Description |
-   | --- | --- |
-   | `JWT_SECRET` | Secret used to sign auth tokens. |
-   | `MONGODB_URI` | Connection string to your MongoDB cluster. |
-   | `CLOUDINARY_CLOUD_NAME` | Cloudinary account cloud name. |
-   | `CLOUDINARY_API_KEY` | Cloudinary API key. |
-   | `CLOUDINARY_API_SECRET` | Cloudinary API secret. |
-   | `NEXT_PUBLIC_MAPBOX_TOKEN` | Public token for Mapbox (or drop-in MapLibre if preferred). |
+Runtime notes
 
-   (Optional) `NEXT_PUBLIC_APP_NAME` and any other values from `.env.example` can also be supplied.
-
-5. Deploy the project. Vercel will build the app using `npm run build` and host it on their global edge network.
-6. After the first deployment succeeds:
-   - Visit the live URL to verify the landing page, login/register screens, and dashboard load correctly.
-   - Because chat uses Server-Sent Events, keep the deployment on a single Node.js instance or move the SSE broker (`lib/sse`) to a shared service such as Redis/Pusher before enabling multiple regions.
-
-### Runtime notes
-
-- A `vercel.json` file pins the `/api/events/stream` function to the Node.js runtime with an increased timeout so SSE connections stay open.
-- If you experience frequent disconnects, consider switching `/api/events/stream` to a managed realtime provider or polling fallback as mentioned in the SSE section above.
+- A `vercel.json` file pins `/api/events/stream` to the Node.js runtime with an increased timeout so SSE connections stay open.
+- If you see frequent SSE disconnects, switch to a managed realtime provider or a polling fallback.
 
