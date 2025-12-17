@@ -112,7 +112,7 @@ export default function SearchResults({ users, loading, onUserSelect, onHire, cu
                 className="group relative flex w-full flex-col gap-4 px-5 py-4 text-left transition-all duration-200 hover:-translate-y-[1px] hover:bg-[rgba(var(--panel),0.92)] hover:shadow-inner"
               >
                 <div className="flex items-start gap-4">
-              <div className="border-t border-soft surface-card px-5 py-3 text-center text-xs text-muted">
+                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-soft surface-card">
                     <img
                       src={user.avatar?.url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'U')}&background=0ea5e9&color=fff&size=128&bold=true`}
                       alt={user.name || 'User avatar'}
