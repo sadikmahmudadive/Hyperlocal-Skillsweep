@@ -296,7 +296,7 @@ export default function UserProfile() {
                 <button
                   onClick={toggleFavorite}
                   disabled={favoriteLoading}
-                  className={`text-2xl leading-none transition-transform ${isFavorite ? 'text-rose-500 scale-110' : 'text-gray-300 hover:text-rose-400 hover:scale-110'}`}
+                  className={`text-2xl leading-none transition-transform ${isFavorite ? 'text-rose-500 scale-110' : 'text-slate-300 hover:text-rose-400 dark:text-slate-600 dark:hover:text-rose-300 hover:scale-110'}`}
                   title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
                 >
                   {isFavorite ? '♥' : '♡'}
@@ -372,7 +372,7 @@ export default function UserProfile() {
                 </div>
               ))}
               {(!user.skillsNeeded || user.skillsNeeded.length === 0) && (
-                <p className="text-gray-500 dark:text-slate-400 text-center py-4">No skills needed listed</p>
+                <p className="text-muted text-center py-4">No skills needed listed</p>
               )}
             </div>
           </div>
@@ -382,7 +382,7 @@ export default function UserProfile() {
         <div className="card p-6 mt-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Reviews</h2>
-            <div className="text-sm text-gray-600 dark:text-slate-400">
+            <div className="text-sm text-muted">
               Avg {reviewStats.average || user.rating?.average || 0}/5 • {reviewStats.count || user.rating?.count || 0} total
             </div>
           </div>
@@ -395,16 +395,16 @@ export default function UserProfile() {
               return (
                 <div key={star} className="flex items-center gap-2 text-sm">
                   <span className="w-10 text-right">{star}★</span>
-                  <div className="flex-1 h-2 rounded bg-gray-100 dark:bg-slate-800 overflow-hidden">
+                  <div className="flex-1 h-2 rounded bg-slate-200/70 dark:bg-slate-800/70 overflow-hidden">
                     <div className="h-full bg-yellow-400" style={{ width: `${pct}%` }} />
                   </div>
-                  <span className="w-12 text-right text-gray-600 dark:text-slate-400">{count}</span>
+                  <span className="w-12 text-right text-muted">{count}</span>
                 </div>
               );
             })}
           </div>
           {reviewsLoading && reviews.length === 0 ? (
-            <div className="text-center text-gray-600 dark:text-slate-300 py-6">Loading reviews…</div>
+            <div className="text-center text-secondary py-6">Loading reviews…</div>
           ) : reviews.length > 0 ? (
             <div className="space-y-4">
               {reviews.map((review) => (
@@ -420,18 +420,18 @@ export default function UserProfile() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900 dark:text-slate-100">{review.reviewer?.name || 'Anonymous'}</span>
+                          <span className="font-medium text-strong">{review.reviewer?.name || 'Anonymous'}</span>
                           <span className="text-yellow-500">{'⭐'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}</span>
-                          <span className="text-xs text-gray-500 dark:text-slate-400">{new Date(review.createdAt).toLocaleDateString()}</span>
+                          <span className="text-xs text-muted">{new Date(review.createdAt).toLocaleDateString()}</span>
                         </div>
                         {review.transaction?.skill?.name && (
-                          <div className="text-xs text-gray-500 dark:text-slate-400">Skill: {review.transaction.skill.name}</div>
+                          <div className="text-xs text-muted">Skill: {review.transaction.skill.name}</div>
                         )}
                       </div>
                     </div>
                   </div>
                   {review.comment && (
-                    <p className="text-gray-700 dark:text-slate-200">{review.comment}</p>
+                    <p className="text-secondary">{review.comment}</p>
                   )}
                 </div>
               ))}
@@ -448,7 +448,7 @@ export default function UserProfile() {
               )}
             </div>
           ) : (
-            <p className="text-gray-500 dark:text-slate-400 text-center py-4">No reviews yet</p>
+            <p className="text-muted text-center py-4">No reviews yet</p>
           )}
         </div>
       </div>

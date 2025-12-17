@@ -3,8 +3,8 @@ import { useToast } from '../../contexts/ToastContext';
 const typeStyles = {
   success: 'bg-green-600 text-white',
   error: 'bg-red-600 text-white',
-  info: 'bg-gray-900 text-white',
-  warning: 'bg-yellow-500 text-gray-900',
+  info: 'bg-slate-900 text-white',
+  warning: 'bg-yellow-400 text-slate-900',
 };
 
 export default function ToastContainer() {

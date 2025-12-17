@@ -540,7 +540,7 @@ function ReviewForm({ submitting, onSubmit, initialRating, initialComment, onDel
               type="button"
               aria-label={`${r} star${r>1?'s':''}`}
               onClick={() => setRating(r)}
-              className={`h-9 w-9 rounded-full flex items-center justify-center border transition ${r <= rating ? 'bg-yellow-400 border-yellow-500 text-white' : 'bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800'}`}
+              className={`h-9 w-9 rounded-full flex items-center justify-center border transition ${r <= rating ? 'bg-yellow-400 border-yellow-500 text-white' : 'bg-white/80 dark:bg-slate-900/60 border-soft text-muted hover:bg-white dark:hover:bg-slate-800/40'}`}
             >
               {r <= rating ? '⭐' : '☆'}
             </button>
