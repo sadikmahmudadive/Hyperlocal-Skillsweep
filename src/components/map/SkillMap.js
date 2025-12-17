@@ -410,7 +410,7 @@ const SkillMap = ({ users = [], onUserSelect, currentLocation, distanceKm = null
             closeOnClick={false}
             anchor="bottom"
           >
-            <div className="p-2 max-w-xs">
+            <div className="glass-panel p-3 max-w-xs">
               <h3 className="font-semibold text-lg mb-1 flex items-center gap-2">
                 <span>{selectedUser.name}</span>
                 {selectedUser.online && (
@@ -420,7 +420,7 @@ const SkillMap = ({ users = [], onUserSelect, currentLocation, distanceKm = null
                   </span>
                 )}
               </h3>
-              <p className="text-sm text-gray-600 mb-2 line-clamp-2">{selectedUser.bio}</p>
+              <p className="text-sm text-secondary mb-2 line-clamp-2">{selectedUser.bio}</p>
               
               <div className="mb-2">
                 <strong className="text-sm">Offers:</strong>
@@ -445,7 +445,7 @@ const SkillMap = ({ users = [], onUserSelect, currentLocation, distanceKm = null
                 </span>
               </div>
               {currentLocation && Array.isArray(selectedUser.location?.coordinates) && (
-                <div className="text-[12px] text-gray-500 mb-2">
+                <div className="text-[12px] text-muted mb-2">
                   {(haversineKm(selectedUser.location.coordinates, currentLocation) || 0).toFixed(1)} km away
                 </div>
               )}

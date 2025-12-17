@@ -90,11 +90,11 @@ export default function MyReviews() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
+    <div className="min-h-screen">
       <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">My Reviews</h1>
-          <p className="text-gray-600 dark:text-slate-300 mt-1">Reviews you&apos;ve written for others</p>
+          <h1 className="text-3xl font-bold text-strong">My Reviews</h1>
+          <p className="text-secondary mt-1">Reviews you&apos;ve written for others</p>
         </div>
 
         {loading && reviews.length === 0 ? (
@@ -116,20 +116,20 @@ export default function MyReviews() {
                     <div className="flex items-center gap-2">
                       <span className="font-medium dark:text-slate-100">{targetName || 'User'}</span>
                       <span className="text-yellow-500">{'⭐'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
-                      <span className="text-xs text-gray-500 dark:text-slate-400">{new Date(r.createdAt).toLocaleDateString()}</span>
+                      <span className="text-xs text-muted">{new Date(r.createdAt).toLocaleDateString()}</span>
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-slate-400">Skill: {skillName}</div>
-                    {r.comment && <p className="mt-1 text-gray-700 dark:text-slate-200">{r.comment}</p>}
+                    <div className="text-xs text-muted">Skill: {skillName}</div>
+                    {r.comment && <p className="mt-1 text-secondary">{r.comment}</p>}
                   </div>
                   <div className="text-right space-y-1">
                     <button
-                      className="text-sm text-green-700 hover:text-green-800 underline disabled:no-underline disabled:text-gray-400"
+                      className="text-sm text-emerald-700 hover:text-emerald-800 dark:text-emerald-300 dark:hover:text-emerald-200 underline disabled:no-underline disabled:text-soft"
                       disabled={!canEdit}
                       onClick={() => setEditModal({ open: true, review: r })}
                     >
                       Edit
                     </button>
-                    <div className="text-[11px] text-gray-400">{canEdit ? `${remainingH}h left` : 'Edit window expired'}</div>
+                    <div className="text-[11px] text-soft">{canEdit ? `${remainingH}h left` : 'Edit window expired'}</div>
                   </div>
                 </div>
               );
@@ -172,16 +172,23 @@ function EditForm({ submitting, onSubmit, initialRating, initialComment, onDelet
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit?.(rating, comment); }} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium mb-1">Rating</label>
+        <label className="block text-sm font-medium text-secondary mb-1">Rating</label>
         <div className="flex items-center gap-1">
           {[1,2,3,4,5].map((r) => (
-            <button key={r} type="button" onClick={() => setRating(r)} className={`h-9 w-9 rounded-full border ${r <= rating ? 'bg-yellow-400 border-yellow-500 text-white' : 'bg-white text-gray-600'}`}>{r <= rating ? '⭐' : '☆'}</button>
+            <button
+              key={r}
+              type="button"
+              onClick={() => setRating(r)}
+              className={`h-9 w-9 rounded-full border transition ${r <= rating ? 'bg-yellow-400 border-yellow-500 text-white' : 'bg-white/80 dark:bg-slate-900/60 border-soft text-muted hover:bg-white dark:hover:bg-slate-800/40'}`}
+            >
+              {r <= rating ? '⭐' : '☆'}
+            </button>
           ))}
         </div>
       </div>
       <div>
-        <label className="block text-sm font-medium mb-1">Comment</label>
-        <textarea rows={4} className="w-full border rounded-md p-2" maxLength={500} value={comment} onChange={(e) => setComment(e.target.value)} />
+        <label className="block text-sm font-medium text-secondary mb-1">Comment</label>
+        <textarea rows={4} className="input-field" maxLength={500} value={comment} onChange={(e) => setComment(e.target.value)} />
       </div>
       <div className="flex justify-between">
         <Button

@@ -169,13 +169,13 @@ export default function Transactions() {
 
   const getStatusColor = (status) => {
     const colors = {
-      'pending': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      'confirmed': 'bg-blue-100 text-blue-800 border-blue-200',
-      'in-progress': 'bg-purple-100 text-purple-800 border-purple-200',
-      'completed': 'bg-green-100 text-green-800 border-green-200',
-      'cancelled': 'bg-red-100 text-red-800 border-red-200'
+      'pending': 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-500/15 dark:text-yellow-200 dark:border-yellow-500/30',
+      'confirmed': 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-sky-500/15 dark:text-sky-200 dark:border-sky-500/30',
+      'in-progress': 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-violet-500/15 dark:text-violet-200 dark:border-violet-500/30',
+      'completed': 'bg-green-100 text-green-800 border-green-200 dark:bg-emerald-500/15 dark:text-emerald-200 dark:border-emerald-500/30',
+      'cancelled': 'bg-red-100 text-red-800 border-red-200 dark:bg-rose-500/15 dark:text-rose-200 dark:border-rose-500/30'
     };
-    return colors[status] || 'bg-gray-100 text-gray-800 border-gray-200';
+    return colors[status] || 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/60 dark:text-slate-200 dark:border-slate-700/60';
   };
 
   const getActionButtons = (transaction) => {
@@ -241,7 +241,7 @@ export default function Transactions() {
         const canEdit = !!details?.id && remainingMs > 0;
         buttons.push(
           <div key="reviewed" className="flex items-center gap-2">
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-muted">
               Reviewed{details?.rating ? `: ${'⭐'.repeat(details.rating)}${'☆'.repeat(5 - details.rating)}` : ''}
             </span>
             {canEdit && (
@@ -251,18 +251,18 @@ export default function Transactions() {
                   setEditReview({ id: details.id, rating: details.rating || 5, comment: details.comment || '' });
                   setReviewModal({ open: true, transaction, targetUser: transaction.provider._id === user.id ? transaction.receiver : transaction.provider });
                 }}
-                className="text-xs text-green-700 hover:text-green-800 underline"
+                className="text-xs text-emerald-700 hover:text-emerald-800 dark:text-emerald-300 dark:hover:text-emerald-200 underline"
               >
                 Edit
               </button>
             )}
             {!canEdit && details?.id && (
-              <span className="text-[11px] text-gray-400" title="Edits allowed for 24h after posting">
+              <span className="text-[11px] text-soft" title="Edits allowed for 24h after posting">
                 Edit window expired
               </span>
             )}
             {canEdit && (
-              <span className="text-[11px] text-gray-400" title="Edits allowed for 24h after posting">
+              <span className="text-[11px] text-soft" title="Edits allowed for 24h after posting">
                 {remainingH}h left
               </span>
             )}
@@ -288,15 +288,15 @@ export default function Transactions() {
     : categorized[key] || [];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
+    <div className="min-h-screen">
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">Transaction History</h1>
-          <p className="text-gray-600 dark:text-slate-300 mt-2">Manage your skill exchanges and credits</p>
+          <h1 className="text-3xl font-bold text-strong">Transaction History</h1>
+          <p className="text-secondary mt-2">Manage your skill exchanges and credits</p>
         </div>
 
         {/* Tabs */}
-        <div className="border-b border-gray-200 mb-6">
+        <div className="border-b border-soft mb-6">
           <nav className="-mb-px flex space-x-8">
             {tabs.map((tab) => (
               <button
@@ -304,14 +304,16 @@ export default function Transactions() {
                 onClick={() => { setActiveTab(tab.id); router.push({ pathname: router.pathname, query: { ...router.query, status: tab.id } }, undefined, { shallow: true }); }}
                 className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === tab.id
-                    ? 'border-green-500 text-green-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-emerald-500 text-emerald-700 dark:text-emerald-300'
+                    : 'border-transparent text-muted hover:text-strong hover:border-soft'
                 }`}
               >
                 {tab.name}
                 {tab.count > 0 && (
                   <span className={`ml-2 py-0.5 px-2 text-xs rounded-full ${
-                    activeTab === tab.id ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'
+                    activeTab === tab.id
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200'
+                      : 'bg-slate-100 text-slate-700 dark:bg-slate-800/60 dark:text-slate-200'
                   }`}>
                     {tab.count}
                   </span>
@@ -340,11 +342,11 @@ export default function Transactions() {
             </div>
           </div>
         ) : filteredTransactions.length > 0 ? (
-          <div className="bg-white dark:bg-slate-900/60 shadow overflow-hidden sm:rounded-md border border-gray-200 dark:border-slate-800">
-            <ul className="divide-y divide-gray-200 dark:divide-slate-800">
+          <div className="surface-card border border-soft shadow overflow-hidden sm:rounded-md">
+            <ul className="divide-y divide-slate-200/60 dark:divide-slate-800/70">
               {filteredTransactions.map((transaction) => (
                 <li key={transaction._id}>
-                  <div className="px-4 py-4 sm:px-6 hover:bg-gray-50 dark:hover:bg-slate-800/40">
+                  <div className="px-4 py-4 sm:px-6 hover:bg-white/40 dark:hover:bg-slate-800/30">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
                         <div className="flex-shrink-0">
@@ -356,20 +358,20 @@ export default function Transactions() {
                         </div>
                         <div className="ml-4">
                           <div className="flex items-center">
-                            <h4 className="text-lg font-medium text-gray-900 dark:text-slate-100">
+                            <h4 className="text-lg font-medium text-strong">
                               {transaction.skill.name}
                             </h4>
                             <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}>
                               {transaction.status}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-600 dark:text-slate-300">
+                          <p className="text-sm text-secondary">
                             {transaction.provider._id === user.id 
                               ? `You provided to ${transaction.receiver.name}`
                               : `You received from ${transaction.provider.name}`
                             }
                           </p>
-                          <p className="text-sm text-gray-500 dark:text-slate-400">
+                          <p className="text-sm text-muted">
                             Duration: {transaction.duration}h
                             {transaction.amount > 0 && ` • Price: ${transaction.amount} ${transaction.currency || 'BDT'}`}
                             {transaction.discount > 0 && ` • Discount: -${transaction.discount} ${transaction.currency || 'BDT'}`}
@@ -381,18 +383,18 @@ export default function Transactions() {
                         <div className="text-right">
                           {transaction.amount > 0 ? (
                             <>
-                              <span className="block text-lg font-semibold text-green-600">
+                              <span className="block text-lg font-semibold text-emerald-600 dark:text-emerald-300">
                                 {transaction.finalAmount} {transaction.currency || 'BDT'}
                               </span>
                               {transaction.discount > 0 && (
-                                <span className="block text-xs text-gray-500">
+                                <span className="block text-xs text-muted">
                                   <span className="line-through">{transaction.amount}</span>
-                                  <span className="ml-1 text-green-600">(-{transaction.credits}⏱️)</span>
+                                  <span className="ml-1 text-emerald-600 dark:text-emerald-300">(-{transaction.credits}⏱️)</span>
                                 </span>
                               )}
                             </>
                           ) : (
-                            <span className="text-lg font-semibold text-green-600">
+                            <span className="text-lg font-semibold text-emerald-600 dark:text-emerald-300">
                               {transaction.credits}⏱️
                             </span>
                           )}
@@ -400,7 +402,7 @@ export default function Transactions() {
                       </div>
                     </div>
                     {transaction.scheduledDate && (
-                      <div className="mt-2 text-sm text-gray-500 dark:text-slate-400">
+                      <div className="mt-2 text-sm text-muted">
                         Scheduled: {new Date(transaction.scheduledDate).toLocaleDateString()}
                       </div>
                     )}
@@ -412,8 +414,8 @@ export default function Transactions() {
         ) : (
           <div className="card p-8 text-center">
             <div className="text-6xl mb-4">📋</div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-2">No transactions found</h3>
-            <p className="text-gray-600 dark:text-slate-300">
+            <h3 className="text-lg font-semibold text-strong mb-2">No transactions found</h3>
+            <p className="text-secondary">
               {activeTab === 'all' 
                 ? "You haven't made any transactions yet."
                 : `You don't have any ${activeTab} transactions.`
@@ -530,7 +532,7 @@ function ReviewForm({ submitting, onSubmit, initialRating, initialComment, onDel
       className="space-y-4"
     >
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Rating</label>
+        <label className="block text-sm font-medium text-secondary mb-1">Rating</label>
         <div className="flex items-center space-x-1">
           {[1,2,3,4,5].map((r) => (
             <button
@@ -546,9 +548,9 @@ function ReviewForm({ submitting, onSubmit, initialRating, initialComment, onDel
         </div>
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Comment (optional)</label>
+        <label className="block text-sm font-medium text-secondary mb-1">Comment (optional)</label>
         <textarea
-          className="w-full border rounded-md p-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100"
+          className="input-field"
           rows={4}
           maxLength={500}
           placeholder="Share your experience..."
@@ -558,7 +560,7 @@ function ReviewForm({ submitting, onSubmit, initialRating, initialComment, onDel
           aria-describedby={fieldErrors.comment ? 'comment-error' : undefined}
         />
         {fieldErrors.comment && <div id="comment-error" className="text-xs text-rose-600 mt-1">{fieldErrors.comment}</div>}
-        <div className="text-xs text-gray-500 dark:text-slate-400 text-right">{comment.length}/500</div>
+        <div className="text-xs text-muted text-right">{comment.length}/500</div>
       </div>
       <div className="flex justify-between space-x-2">
         <div>
