@@ -39,11 +39,20 @@ export default function ChatWindow({ conversation, onClose }) {
   };
 
   const scrollToBottom = (smooth = true) => {
-    if (smooth) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    } else {
-      messagesEndRef.current?.scrollIntoView();
+    const list = listRef.current;
+    if (list) {
+      const top = list.scrollHeight;
+      if (smooth) {
+        list.scrollTo({ top, behavior: 'smooth' });
+      } else {
+        list.scrollTop = top;
+      }
+      return;
     }
+
+    // Fallback (should be rare) if listRef isn't mounted yet.
+    if (smooth) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    else messagesEndRef.current?.scrollIntoView();
   };
 
   const refreshUnreadBestEffort = async () => {
@@ -118,8 +127,9 @@ export default function ChatWindow({ conversation, onClose }) {
   }, [conversation?._id]);
 
   useEffect(() => {
+    if (!isAtBottom) return;
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isAtBottom]);
 
   // Subscribe to SSE for live message inserts and typing
   const [sseConnected, setSseConnected] = useState(true);
