@@ -173,12 +173,12 @@ const SkillMap = ({ users = [], onUserSelect, currentLocation, distanceKm = null
         <ScaleControl position="bottom-left" maxWidth={120} unit="metric" />
 
         {/* Style selector and controls */}
-        <div className="absolute top-2 left-2 z-10 bg-white/80 backdrop-blur rounded shadow p-2 flex items-center gap-2">
-          <select className="text-sm border rounded px-2 py-1" value={mapStyle} onChange={(e) => setMapStyle(e.target.value)}>
+        <div className="absolute top-2 left-2 z-10 glass-panel rounded p-2 flex items-center gap-2">
+          <select className="text-sm border rounded px-2 py-1 bg-white/70 dark:bg-slate-900/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200" value={mapStyle} onChange={(e) => setMapStyle(e.target.value)}>
             {styles.map(s => (<option key={s.id} value={s.url}>{s.label}</option>))}
           </select>
           <button
-            className="text-sm px-2 py-1 rounded border hover:bg-gray-50"
+            className="text-sm px-2 py-1 rounded border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
             title="Recenter to saved/current location"
             onClick={() => {
               try {
@@ -202,7 +202,7 @@ const SkillMap = ({ users = [], onUserSelect, currentLocation, distanceKm = null
             Recenter
           </button>
           <button
-            className="text-sm px-2 py-1 rounded border hover:bg-gray-50"
+            className="text-sm px-2 py-1 rounded border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
             onClick={() => {
               try {
                 const map = mapRef.current?.getMap?.();
@@ -232,11 +232,11 @@ const SkillMap = ({ users = [], onUserSelect, currentLocation, distanceKm = null
 
         {/* Pick-on-map overlay controls */}
         {picking && (
-          <div className="absolute top-2 right-2 z-20 bg-white/90 backdrop-blur rounded shadow px-3 py-2 text-sm flex items-center gap-2 max-w-[70%]">
-            <div className="text-gray-700 truncate">
+          <div className="absolute top-2 right-2 z-20 glass-panel rounded px-3 py-2 text-sm flex items-center gap-2 max-w-[70%]">
+            <div className="text-slate-700 dark:text-slate-200 truncate">
               <div className="font-medium">Pick a location</div>
               {activePick ? (
-                <div className="text-[12px] text-gray-600 truncate">
+                <div className="text-[12px] text-slate-600 dark:text-slate-300 truncate">
                   {pickLabel ? (
                     <span title={pickLabel}>Selected: {pickLabel}</span>
                   ) : (
@@ -244,11 +244,11 @@ const SkillMap = ({ users = [], onUserSelect, currentLocation, distanceKm = null
                   )}
                 </div>
               ) : (
-                <div className="text-[12px] text-gray-500">Click to drop or drag pin</div>
+                <div className="text-[12px] text-slate-500 dark:text-slate-400">Click to drop or drag pin</div>
               )}
             </div>
             <div className="flex items-center gap-2">
-              <button className="px-2 py-1 rounded border hover:bg-gray-50" onClick={() => onPickCancel && onPickCancel()}>Cancel</button>
+              <button className="px-2 py-1 rounded border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800" onClick={() => onPickCancel && onPickCancel()}>Cancel</button>
               <button
                 className="px-2 py-1 rounded bg-green-600 text-white disabled:opacity-50"
                 disabled={!activePick}
@@ -262,7 +262,7 @@ const SkillMap = ({ users = [], onUserSelect, currentLocation, distanceKm = null
 
         {/* Location label overlay */}
         {placeLabel ? (
-          <div className="absolute top-2 right-2 z-10 bg-white/80 backdrop-blur rounded shadow px-3 py-1 text-sm text-gray-700 max-w-[60%] truncate">
+          <div className="absolute top-2 right-2 z-10 glass-panel rounded px-3 py-1 text-sm text-slate-700 dark:text-slate-200 max-w-[60%] truncate">
             Near: {placeLabel}
           </div>
         ) : null}
@@ -271,10 +271,10 @@ const SkillMap = ({ users = [], onUserSelect, currentLocation, distanceKm = null
         {typeof gpsAccuracy === 'number' ? (() => {
           const acc = gpsAccuracy;
           const quality = acc < 25 ? 'Good' : acc <= 100 ? 'Fair' : 'Coarse';
-          const colorClass = acc < 25 ? 'text-green-700' : acc <= 100 ? 'text-amber-700' : 'text-red-700';
+          const colorClass = acc < 25 ? 'text-green-700 dark:text-emerald-200' : acc <= 100 ? 'text-amber-700 dark:text-amber-200' : 'text-red-700 dark:text-rose-200';
           const dotClass = acc < 25 ? 'bg-green-500' : acc <= 100 ? 'bg-amber-500' : 'bg-red-500';
           return (
-            <div className={`absolute top-12 right-2 z-10 bg-white/80 backdrop-blur rounded shadow px-2 py-0.5 text-[11px] ${colorClass} flex items-center gap-1`}>
+            <div className={`absolute top-12 right-2 z-10 glass-panel rounded px-2 py-0.5 text-[11px] ${colorClass} flex items-center gap-1`}>
               <span className={`inline-block h-2 w-2 rounded-full ${dotClass}`}></span>
               <span>~{acc} m • {quality}</span>
             </div>

@@ -790,45 +790,45 @@ function HireForm({ skills, availableCredits, submitting, onSubmit }) {
   return (
     <form onSubmit={onSubmitInternal} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Skill</label>
+        <label className="block text-sm font-medium text-strong mb-1">Skill</label>
         {hasSkills ? (
-          <select className="w-full border rounded-md p-2 focus:ring-2 focus:ring-green-500 focus:border-green-500" value={skillId} onChange={(e) => setSkillId(e.target.value)}>
+          <select className="input-field" value={skillId} onChange={(e) => setSkillId(e.target.value)}>
             {skills.map((s) => (
               <option key={s._id || s.name} value={s._id || s.name}>{s.name}</option>
             ))}
             <option value="__custom__">Custom request…</option>
           </select>
         ) : (
-          <div className="text-sm text-gray-600">This user hasn&apos;t listed any skills. Send a custom request:</div>
+          <div className="text-sm text-secondary">This user hasn&apos;t listed any skills. Send a custom request:</div>
         )}
       </div>
       {(skillId === '__custom__' || !hasSkills) && (
         <div className="space-y-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Requested Skill</label>
-            <input type="text" value={customName} onChange={(e) => setCustomName(e.target.value)} placeholder="e.g., Gardening help" className="w-full border rounded-md p-2 focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+            <label className="block text-sm font-medium text-strong mb-1">Requested Skill</label>
+            <input type="text" value={customName} onChange={(e) => setCustomName(e.target.value)} placeholder="e.g., Gardening help" className="input-field" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Details (optional)</label>
-            <textarea rows={3} value={customDescription} onChange={(e) => setCustomDescription(e.target.value)} placeholder="Describe what you need" className="w-full border rounded-md p-2 focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+            <label className="block text-sm font-medium text-strong mb-1">Details (optional)</label>
+            <textarea rows={3} value={customDescription} onChange={(e) => setCustomDescription(e.target.value)} placeholder="Describe what you need" className="input-field" />
           </div>
         </div>
       )}
       
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Duration (hours)</label>
-          <input type="number" min="0.5" step="0.5" value={duration} onChange={(e) => setDuration(Number(e.target.value))} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+          <label className="block text-sm font-medium text-strong mb-1">Duration (hours)</label>
+          <input type="number" min="0.5" step="0.5" value={duration} onChange={(e) => setDuration(Number(e.target.value))} className="input-field" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Date (optional)</label>
-          <input type="date" value={scheduled} onChange={(e) => setScheduled(e.target.value)} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+          <label className="block text-sm font-medium text-strong mb-1">Date (optional)</label>
+          <input type="date" value={scheduled} onChange={(e) => setScheduled(e.target.value)} className="input-field" />
         </div>
       </div>
 
-      <div className="p-4 bg-slate-50 rounded-lg space-y-3 border border-slate-200">
+      <div className="p-4 rounded-lg space-y-3 surface-muted border border-soft">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Agreed Price (BDT)</label>
+          <label className="block text-sm font-medium text-strong mb-1">Agreed Price (BDT)</label>
           <input 
             type="number" 
             min="0" 
@@ -840,14 +840,14 @@ function HireForm({ skills, availableCredits, submitting, onSubmit }) {
               // Reset credits if they exceed new max
               if (credits * CREDIT_RATE > p) setCredits(0);
             }} 
-            className="w-full border rounded-md p-2 focus:ring-2 focus:ring-green-500 focus:border-green-500" 
+            className="input-field" 
           />
         </div>
 
         <div>
           <div className="flex justify-between mb-1">
-            <label className="block text-sm font-medium text-gray-700">Use Credits for Discount</label>
-            <span className="text-xs text-gray-500">Available: {availableCredits}</span>
+            <label className="block text-sm font-medium text-strong">Use Credits for Discount</label>
+            <span className="text-xs text-muted">Available: {availableCredits}</span>
           </div>
           <div className="flex items-center gap-2">
             <input 
@@ -865,15 +865,15 @@ function HireForm({ skills, availableCredits, submitting, onSubmit }) {
               max={maxDiscountCredits} 
               value={credits} 
               onChange={(e) => setCredits(Math.min(maxDiscountCredits, Number(e.target.value)))} 
-              className="w-16 border rounded-md p-1 text-center text-sm"
+              className="w-16 border rounded-md p-1 text-center text-sm bg-white/80 dark:bg-slate-900/70 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100"
             />
           </div>
-          <div className="text-xs text-gray-500 mt-1">
+          <div className="text-xs text-muted mt-1">
             {credits} credits = -{discountAmount} BDT
           </div>
         </div>
 
-        <div className="pt-2 border-t border-slate-200 flex justify-between items-center font-semibold">
+        <div className="pt-2 border-t border-soft flex justify-between items-center font-semibold">
           <span>Final to Pay:</span>
           <span className="text-lg text-emerald-600">{finalPrice} BDT</span>
         </div>

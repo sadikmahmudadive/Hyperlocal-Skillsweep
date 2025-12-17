@@ -708,7 +708,7 @@ export default function ChatWindow({ conversation, onClose }) {
               }
             }}
             placeholder="Type a message..."
-            className="flex-1 bg-transparent border-none focus:ring-0 p-2 max-h-32 min-h-[40px] resize-none text-slate-800 dark:text-slate-200 placeholder-slate-400"
+            className="flex-1 bg-transparent border-none focus:ring-0 p-2 max-h-32 min-h-[40px] resize-none text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500"
             rows={1}
             disabled={loading}
           />

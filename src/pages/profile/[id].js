@@ -233,10 +233,10 @@ export default function UserProfile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading profile...</p>
+          <p className="text-secondary">Loading profile...</p>
         </div>
       </div>
     );
@@ -244,9 +244,9 @@ export default function UserProfile() {
 
   if (error || !user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          <h1 className="text-2xl font-bold text-strong mb-4">
             {error || 'User not found'}
           </h1>
           <button 
@@ -261,7 +261,7 @@ export default function UserProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
+    <div className="min-h-screen">
       <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* Profile Header */}
         <div className="card p-6 mb-6">
@@ -270,24 +270,24 @@ export default function UserProfile() {
               {user.name?.charAt(0) || 'U'}
             </div>
             <div className="flex-1">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{user.name}</h1>
-              <p className="text-gray-600 dark:text-slate-300 mt-2">{user.bio || 'No bio provided'}</p>
+              <h1 className="text-3xl font-bold text-strong">{user.name}</h1>
+              <p className="text-secondary mt-2">{user.bio || 'No bio provided'}</p>
               <div className="flex items-center space-x-6 mt-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-600">{user.credits || 0}</div>
-                  <div className="text-sm text-gray-500">Credits</div>
+                  <div className="text-sm text-muted">Credits</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-yellow-600">
                     {user.rating?.average || '0'}/5
                   </div>
-                  <div className="text-sm text-gray-500">Rating</div>
+                  <div className="text-sm text-muted">Rating</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-600">
                     {user.rating?.count || reviews?.length || 0}
                   </div>
-                  <div className="text-sm text-gray-500">Reviews</div>
+                  <div className="text-sm text-muted">Reviews</div>
                 </div>
               </div>
             </div>
@@ -311,7 +311,7 @@ export default function UserProfile() {
                 <button
                   onClick={() => openHire(hirePrefill)}
                   disabled={submittingHire || user.isAvailable === false}
-                  className={`px-6 py-2 rounded-md border ${user.isAvailable === false ? 'border-gray-300 text-gray-400 cursor-not-allowed' : 'border-green-600 text-green-700 hover:bg-green-50'} disabled:opacity-50`}
+                  className={`px-6 py-2 rounded-md border ${user.isAvailable === false ? 'border-slate-300 text-slate-400 cursor-not-allowed dark:border-slate-700 dark:text-slate-600' : 'border-emerald-600 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-400/60 dark:text-emerald-200 dark:hover:bg-emerald-500/10'} disabled:opacity-50`}
                 >
                   {user.isAvailable === false ? 'Unavailable' : 'Hire'}
                 </button>
@@ -330,12 +330,12 @@ export default function UserProfile() {
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-semibold text-lg">{skill.name}</h3>
-                      <p className="text-gray-600 dark:text-slate-300 text-sm mt-1">{skill.description}</p>
+                      <p className="text-secondary text-sm mt-1">{skill.description}</p>
                       <div className="flex space-x-2 mt-2">
-                        <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                        <span className="bg-sky-100 text-sky-800 text-xs px-2 py-1 rounded dark:bg-sky-500/15 dark:text-sky-200">
                           {skill.category}
                         </span>
-                        <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
+                        <span className="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded dark:bg-emerald-500/15 dark:text-emerald-200">
                           {skill.experience}
                         </span>
                       </div>
@@ -353,7 +353,7 @@ export default function UserProfile() {
                 </div>
               ))}
               {(!user.skillsOffered || user.skillsOffered.length === 0) && (
-                <p className="text-gray-500 dark:text-slate-400 text-center py-4">No skills offered yet</p>
+                <p className="text-muted text-center py-4">No skills offered yet</p>
               )}
             </div>
           </div>
@@ -365,8 +365,8 @@ export default function UserProfile() {
               {user.skillsNeeded?.map((skill, index) => (
                 <div key={skill._id || index} className="border rounded-lg p-4 dark:border-slate-700">
                   <h3 className="font-semibold text-lg">{skill.name}</h3>
-                  <p className="text-gray-600 dark:text-slate-300 text-sm mt-1">{skill.description}</p>
-                  <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded mt-2 inline-block">
+                  <p className="text-secondary text-sm mt-1">{skill.description}</p>
+                  <span className="bg-violet-100 text-violet-800 text-xs px-2 py-1 rounded mt-2 inline-block dark:bg-violet-500/15 dark:text-violet-200">
                     {skill.category}
                   </span>
                 </div>
@@ -513,10 +513,10 @@ function HireForm({ skills, prefill, availableCredits, submitting, onSubmit }) {
   return (
     <form onSubmit={onSubmitInternal} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Skill</label>
+        <label className="block text-sm font-medium text-strong mb-1">Skill</label>
         {hasSkills ? (
           <select
-            className="w-full border rounded-md p-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            className="input-field"
             value={skillId}
             onChange={(e) => setSkillId(e.target.value)}
           >
@@ -526,29 +526,29 @@ function HireForm({ skills, prefill, availableCredits, submitting, onSubmit }) {
             <option value="__custom__">Custom request…</option>
           </select>
         ) : (
-          <div className="text-sm text-gray-600">This user hasn&apos;t listed any skills. Send a custom request:</div>
+          <div className="text-sm text-secondary">This user hasn&apos;t listed any skills. Send a custom request:</div>
         )}
       </div>
       {(skillId === '__custom__' || !hasSkills) && (
         <div className="space-y-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Requested Skill</label>
+            <label className="block text-sm font-medium text-strong mb-1">Requested Skill</label>
             <input
               type="text"
               value={customName}
               onChange={(e) => setCustomName(e.target.value)}
               placeholder="e.g., Gardening help"
-              className="w-full border rounded-md p-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              className="input-field"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Details (optional)</label>
+            <label className="block text-sm font-medium text-strong mb-1">Details (optional)</label>
             <textarea
               rows={3}
               value={customDescription}
               onChange={(e) => setCustomDescription(e.target.value)}
               placeholder="Describe what you need"
-              className="w-full border rounded-md p-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              className="input-field"
             />
           </div>
         </div>
@@ -556,30 +556,30 @@ function HireForm({ skills, prefill, availableCredits, submitting, onSubmit }) {
       
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Duration (hours)</label>
+          <label className="block text-sm font-medium text-strong mb-1">Duration (hours)</label>
           <input
             type="number"
             step="0.5"
             min="0.5"
             value={duration}
             onChange={(e) => setDuration(parseFloat(e.target.value))}
-            className="w-full border rounded-md p-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            className="input-field"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Scheduled Date (optional)</label>
+          <label className="block text-sm font-medium text-strong mb-1">Scheduled Date (optional)</label>
           <input
             type="datetime-local"
             value={scheduled}
             onChange={(e) => setScheduled(e.target.value)}
-            className="w-full border rounded-md p-2 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+            className="input-field"
           />
         </div>
       </div>
 
-      <div className="p-4 bg-slate-50 rounded-lg space-y-3 border border-slate-200">
+      <div className="p-4 rounded-lg space-y-3 surface-muted border border-soft">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Agreed Price (BDT)</label>
+          <label className="block text-sm font-medium text-strong mb-1">Agreed Price (BDT)</label>
           <input 
             type="number" 
             min="0" 
@@ -590,14 +590,14 @@ function HireForm({ skills, prefill, availableCredits, submitting, onSubmit }) {
               setPrice(p);
               if (credits * CREDIT_RATE > p) setCredits(0);
             }} 
-            className="w-full border rounded-md p-2 focus:ring-2 focus:ring-green-500 focus:border-green-500" 
+            className="input-field" 
           />
         </div>
 
         <div>
           <div className="flex justify-between mb-1">
-            <label className="block text-sm font-medium text-gray-700">Use Credits for Discount</label>
-            <span className="text-xs text-gray-500">Available: {availableCredits}</span>
+            <label className="block text-sm font-medium text-strong">Use Credits for Discount</label>
+            <span className="text-xs text-muted">Available: {availableCredits}</span>
           </div>
           <div className="flex items-center gap-2">
             <input 
@@ -615,15 +615,15 @@ function HireForm({ skills, prefill, availableCredits, submitting, onSubmit }) {
               max={maxDiscountCredits} 
               value={credits} 
               onChange={(e) => setCredits(Math.min(maxDiscountCredits, Number(e.target.value)))} 
-              className="w-16 border rounded-md p-1 text-center text-sm"
+              className="w-16 border rounded-md p-1 text-center text-sm bg-white/80 dark:bg-slate-900/70 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100"
             />
           </div>
-          <div className="text-xs text-gray-500 mt-1">
+          <div className="text-xs text-muted mt-1">
             {credits} credits = -{discountAmount} BDT
           </div>
         </div>
 
-        <div className="pt-2 border-t border-slate-200 flex justify-between items-center font-semibold">
+        <div className="pt-2 border-t border-soft flex justify-between items-center font-semibold">
           <span>Final to Pay:</span>
           <span className="text-lg text-emerald-600">{finalPrice} BDT</span>
         </div>

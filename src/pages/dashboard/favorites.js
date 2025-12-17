@@ -70,36 +70,36 @@ export default function FavoritesPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
+    <div className="min-h-screen">
+      <header className="surface-card border-b border-soft">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">Saved providers</h1>
-          <p className="text-gray-600 mt-1">Quickly reconnect with your favorite neighbors.</p>
+          <h1 className="text-3xl font-bold text-strong">Saved providers</h1>
+          <p className="text-secondary mt-1">Quickly reconnect with your favorite neighbors.</p>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6 flex justify-between items-center">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">Favorites list</h2>
-            <p className="text-sm text-gray-500">You can save up to 20 providers. Remove one any time.</p>
+            <h2 className="text-xl font-semibold text-strong">Favorites list</h2>
+            <p className="text-sm text-muted">You can save up to 20 providers. Remove one any time.</p>
           </div>
-          <Link href="/search" className="inline-flex items-center gap-2 px-3 py-2 border border-green-600 text-green-600 rounded hover:bg-green-50">
+          <Link href="/search" className="inline-flex items-center gap-2 px-3 py-2 border border-emerald-600 text-emerald-700 rounded hover:bg-emerald-50 dark:border-emerald-400/60 dark:text-emerald-200 dark:hover:bg-emerald-500/10">
             <span>🔍</span>
             <span>Find more providers</span>
           </Link>
         </div>
 
         {loading ? (
-          <div className="bg-white rounded-lg shadow-sm p-8 text-center text-gray-500">
+          <div className="card rounded-lg p-8 text-center text-muted">
             Loading favorites...
           </div>
         ) : favoriteUsers.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-10 text-center">
+          <div className="card rounded-lg p-10 text-center">
             <div className="text-5xl mb-4">💚</div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No favorites yet</h3>
-            <p className="text-gray-600 mb-4">Tap the heart icon on Search results or profiles to build your shortlist.</p>
-            <Link href="/search" className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+            <h3 className="text-lg font-semibold text-strong mb-2">No favorites yet</h3>
+            <p className="text-secondary mb-4">Tap the heart icon on Search results or profiles to build your shortlist.</p>
+            <Link href="/search" className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700">
               Browse skills
             </Link>
           </div>
@@ -108,7 +108,7 @@ export default function FavoritesPage() {
             {favoriteUsers.map((fav) => {
               const userId = fav.id || fav._id?.toString();
               return (
-                <div key={userId} className="bg-white rounded-lg shadow-sm border border-green-100 hover:border-green-300 transition">
+                <div key={userId} className="card rounded-lg border border-soft hover:shadow-elevated transition">
                   <div className="p-4 flex items-center gap-4">
                     <img
                       src={fav.avatar?.url || `https://ui-avatars.com/api/?name=${encodeURIComponent(fav.name || 'U')}&background=0ea5e9&color=fff&size=128&bold=true`}
@@ -117,39 +117,39 @@ export default function FavoritesPage() {
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-gray-900 truncate">{fav.name}</h3>
+                        <h3 className="text-lg font-semibold text-strong truncate">{fav.name}</h3>
                         <button
                           onClick={() => handleRemove(userId, fav.name)}
-                          className="text-sm text-red-500 hover:text-red-600"
+                          className="text-sm text-rose-600 hover:text-rose-700 dark:text-rose-300 dark:hover:text-rose-200"
                         >
                           Remove
                         </button>
                       </div>
-                      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 mt-1">
+                      <div className="flex flex-wrap items-center gap-3 text-sm text-muted mt-1">
                         <span>⭐ {fav.rating?.average?.toFixed?.(1) || Number(fav.rating?.average || 0).toFixed(1)} ({fav.rating?.count || 0})</span>
                         <span>⏱️ {fav.credits || 0} credits</span>
                       </div>
                       {fav.skillsOffered?.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-2">
                           {fav.skillsOffered.slice(0, 3).map((skill, idx) => (
-                            <span key={idx} className="bg-green-50 text-green-700 text-xs px-2 py-1 rounded-full border border-green-200">
+                            <span key={idx} className="bg-emerald-50 text-emerald-700 text-xs px-2 py-1 rounded-full border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-200 dark:border-emerald-500/30">
                               {skill.name}
                             </span>
                           ))}
                           {fav.skillsOffered.length > 3 && (
-                            <span className="text-xs text-gray-400">+{fav.skillsOffered.length - 3} more</span>
+                            <span className="text-xs text-soft">+{fav.skillsOffered.length - 3} more</span>
                           )}
                         </div>
                       )}
                     </div>
                   </div>
                   <div className="px-4 pb-4 flex flex-wrap gap-2">
-                    <Link href={`/profile/${userId}`} className="flex-1 min-w-[140px] text-center px-3 py-2 border border-green-600 text-green-600 rounded hover:bg-green-50">
+                    <Link href={`/profile/${userId}`} className="flex-1 min-w-[140px] text-center px-3 py-2 border border-emerald-600 text-emerald-700 rounded hover:bg-emerald-50 dark:border-emerald-400/60 dark:text-emerald-200 dark:hover:bg-emerald-500/10">
                       View profile
                     </Link>
                     <button
                       onClick={() => handleStartChat(fav)}
-                      className="flex-1 min-w-[140px] px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                      className="flex-1 min-w-[140px] px-3 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700"
                     >
                       Message
                     </button>
