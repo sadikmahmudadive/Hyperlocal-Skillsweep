@@ -585,16 +585,16 @@ export default function SearchPage() {
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 {placeLabel && <GradientPill>Near {placeLabel}</GradientPill>}
-                <label className="flex items-center gap-2 rounded-full border border-white/60 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.28em] text-slate-500 dark:border-slate-800/70 dark:bg-slate-900/60">
-                  Sort
+                <label className="flex items-center gap-2 rounded-full border border-soft surface-card px-3 py-1 text-xs font-semibold uppercase tracking-[0.28em]">
+                  <span className="text-muted">Sort</span>
                   <select
                     value={filters.sort}
                     onChange={(e) => handleFilterChange('sort', e.target.value)}
-                    className="bg-transparent text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-600 focus:outline-none dark:text-slate-200"
+                    className="bg-transparent text-[11px] font-semibold uppercase tracking-[0.28em] text-strong focus:outline-none"
                   >
-                    <option value="relevance">Relevance</option>
-                    <option value="rating">Rating</option>
-                    <option value="credits">Credits</option>
+                    <option className="bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100" value="relevance">Relevance</option>
+                    <option className="bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100" value="rating">Rating</option>
+                    <option className="bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100" value="credits">Credits</option>
                   </select>
                 </label>
               </div>
