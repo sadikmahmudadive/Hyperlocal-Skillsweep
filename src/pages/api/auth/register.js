@@ -6,6 +6,7 @@ import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
 import { createUser, findUserByEmail, toUserResponse } from '../../../lib/userStore';
 import { getFirebaseApp, isFirebaseAdminConfigured } from '../../../lib/firebaseAdmin';
+import { geocodeAddress } from '../../../lib/firestoreStore';
 
 const registerLimiter = createLimiter({
   ...RATE_LIMIT_PROFILES.authRegister,
@@ -50,6 +51,16 @@ export default async function handler(req, res) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
+    const trimmedAddress = address ? String(address).trim() : '';
+    const geocoded = trimmedAddress ? await geocodeAddress(trimmedAddress) : null;
+    const location = trimmedAddress
+      ? {
+          type: 'Point',
+          coordinates: geocoded || [0, 0],
+          address: trimmedAddress,
+        }
+      : undefined;
+
     // Create user
     const user = await createUser({
       name: String(name).trim(),
@@ -57,8 +68,7 @@ export default async function handler(req, res) {
       password: hashedPassword,
       bio,
       credits: 2, // Starting bonus
-      // Store address inside location to match schema
-      location: address ? { address: String(address).trim() } : undefined,
+      location,
     });
 
     if (isFirebaseAdminConfigured()) {

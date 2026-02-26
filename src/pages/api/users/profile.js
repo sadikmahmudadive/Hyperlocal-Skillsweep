@@ -1,6 +1,7 @@
 import { requireAuthRateLimited } from '../../../middleware/auth';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
 import { findUserById, toUserResponse, updateUserProfileById } from '../../../lib/userStore';
+import { geocodeAddress } from '../../../lib/firestoreStore';
 
 async function handler(req, res) {
   if (req.method !== 'PUT') {
@@ -70,6 +71,16 @@ async function handler(req, res) {
       }
       safeUpdateData.preferences.maxDistance = maxDistance;
     }
+
+    const existingUser = await findUserById(userId);
+    const normalizedAddress = String(updateData.address || '').trim();
+    const geocoded = normalizedAddress ? await geocodeAddress(normalizedAddress) : null;
+    safeUpdateData.location = {
+      type: 'Point',
+      coordinates: geocoded || existingUser?.location?.coordinates || [0, 0],
+      address: normalizedAddress,
+    };
+    delete safeUpdateData.address;
 
     const user = await updateUserProfileById(userId, safeUpdateData);
 

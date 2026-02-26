@@ -31,6 +31,27 @@ const haversineKm = (lat1, lng1, lat2, lng2) => {
   return R * c;
 };
 
+export async function geocodeAddress(address) {
+  const query = String(address || '').trim();
+  if (!query) return null;
+  const token = process.env.MAPBOX_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+  if (!token) return null;
+
+  try {
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${encodeURIComponent(token)}&limit=1`;
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const data = await response.json();
+    const center = data?.features?.[0]?.center;
+    if (!Array.isArray(center) || center.length < 2) return null;
+    const [lng, lat] = center.map(Number);
+    if (!Number.isFinite(lng) || !Number.isFinite(lat)) return null;
+    return [lng, lat];
+  } catch (_) {
+    return null;
+  }
+}
+
 export async function getUserById(id) {
   const db = getFirestoreDb();
   const snap = await db.collection(COLLECTIONS.users).doc(String(id)).get();
@@ -85,7 +106,37 @@ export async function searchUsers({ query, category, distance = 10, lat, lng }) 
   const lngNum = Number(lng);
   const maxKm = Number(distance) > 0 ? Number(distance) : 10;
 
-  return all
+  const enriched = hasGeo
+    ? await Promise.all(
+        all.map(async (user) => {
+          const coords = user.location?.coordinates;
+          const hasValidCoords =
+            Array.isArray(coords) &&
+            coords.length >= 2 &&
+            Number.isFinite(Number(coords[0])) &&
+            Number.isFinite(Number(coords[1]));
+
+          if (hasValidCoords) return user;
+
+          const address = String(user.location?.address || user.address || '').trim();
+          if (!address) return user;
+
+          const geocoded = await geocodeAddress(address);
+          if (!geocoded) return user;
+
+          const nextLocation = {
+            type: 'Point',
+            coordinates: geocoded,
+            address,
+          };
+
+          patchUser(user.id || user._id, { location: nextLocation }).catch(() => {});
+          return { ...user, location: nextLocation };
+        })
+      )
+    : all;
+
+  return enriched
     .filter((user) => user.isAvailable !== false)
     .filter((user) => {
       if (!queryNorm) return true;
