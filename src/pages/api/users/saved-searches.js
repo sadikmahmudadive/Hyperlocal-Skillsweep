@@ -2,8 +2,20 @@ import dbConnect from '../../../lib/dbConnect';
 import User from '../../../models/User';
 import mongoose from 'mongoose';
 import { getTokenFromRequest, verifyToken } from '../../../lib/auth';
+import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
 
 const ALLOWED_FILTER_KEYS = ['query', 'category', 'distance', 'sort', 'withinRadius', 'autoFit'];
+const writeLimiter = createLimiter({
+  limit: 30,
+  windowMs: 60_000,
+  keyGenerator: (req) => {
+    const xfwd = req.headers['x-forwarded-for'];
+    const ip = Array.isArray(xfwd)
+      ? xfwd[0]
+      : (xfwd ? xfwd.split(',')[0].trim() : req.socket?.remoteAddress || 'unknown');
+    return `users:saved-searches:${ip}:${req.method}`;
+  },
+});
 
 const sanitizeFilters = (filters = {}) => {
   const cleaned = {};
@@ -14,6 +26,8 @@ const sanitizeFilters = (filters = {}) => {
 };
 
 export default async function handler(req, res) {
+  applyApiSecurityHeaders(res);
+
   const token = getTokenFromRequest(req);
   if (!token) {
     return res.status(401).json({ message: 'Authentication required' });
@@ -44,6 +58,9 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
+      if (!(await enforceRateLimit(writeLimiter, req, res))) {
+        return;
+      }
       const { name, filters } = req.body || {};
       const trimmedName = String(name || '').trim();
       if (!trimmedName) {
@@ -63,6 +80,9 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'PUT') {
+      if (!(await enforceRateLimit(writeLimiter, req, res))) {
+        return;
+      }
       const { id, name, filters } = req.body || {};
       if (!id || !mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ message: 'Valid id is required' });
@@ -89,6 +109,9 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'DELETE') {
+      if (!(await enforceRateLimit(writeLimiter, req, res))) {
+        return;
+      }
       const { id } = req.body || {};
       if (!id || !mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ message: 'Valid id is required' });

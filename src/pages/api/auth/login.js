@@ -1,12 +1,29 @@
 import dbConnect from '../../../lib/dbConnect';
 import User from '../../../models/User';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import cookie from 'cookie';
+import { signToken } from '../../../lib/auth';
+import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
+
+const loginLimiter = createLimiter({
+  limit: 10,
+  windowMs: 15 * 60 * 1000,
+  keyGenerator: (req) => {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+    return `${ip}:auth:login:${email}`;
+  },
+});
 
 export default async function handler(req, res) {
+  applyApiSecurityHeaders(res);
+
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
+  }
+
+  if (!(await enforceRateLimit(loginLimiter, req, res))) {
+    return;
   }
 
   try {
@@ -26,12 +43,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id }, 
-      process.env.JWT_SECRET, 
-      { expiresIn: '7d' }
-    );
+    const token = signToken(user._id);
 
     // Update last active
     user.lastActive = new Date();
@@ -59,7 +71,7 @@ export default async function handler(req, res) {
     res.setHeader('Set-Cookie', cookie.serialize('sseso', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'strict',
       path: '/',
       maxAge: 7 * 24 * 60 * 60,
     }));

@@ -3,7 +3,7 @@ import Review from '../../../models/Review';
 import User from '../../../models/User';
 import Transaction from '../../../models/Transaction';
 import mongoose from 'mongoose';
-import { requireAuth } from '../../../middleware/auth';
+import { requireAuthRateLimited } from '../../../middleware/auth';
 
 async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -98,4 +98,9 @@ async function handler(req, res) {
   }
 }
 
-export default requireAuth(handler);
+export default requireAuthRateLimited(handler, {
+  limit: 20,
+  windowMs: 60_000,
+  methods: ['POST'],
+  keyPrefix: 'reviews:create'
+});

@@ -1,6 +1,6 @@
 import dbConnect from '../../../lib/dbConnect';
 import Transaction from '../../../models/Transaction';
-import { requireAuth } from '../../../middleware/auth';
+import { requireAuthRateLimited } from '../../../middleware/auth';
 import { anchorTransactionProof } from '../../../lib/blockchain';
 
 async function handler(req, res) {
@@ -24,4 +24,9 @@ async function handler(req, res) {
   }
 }
 
-export default requireAuth(handler);
+export default requireAuthRateLimited(handler, {
+  limit: 10,
+  windowMs: 60_000,
+  methods: ['POST'],
+  keyPrefix: 'chain:anchor'
+});

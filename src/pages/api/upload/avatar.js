@@ -1,7 +1,8 @@
 import dbConnect from '../../../lib/dbConnect';
 import User from '../../../models/User';
 import cloudinary from '../../../lib/cloudinary';
-import { requireAuth } from '../../../middleware/auth';
+import { requireAuthRateLimited } from '../../../middleware/auth';
+import { applyApiSecurityHeaders, parseBase64Image } from '../../../lib/security';
 
 export const config = {
   api: {
@@ -12,6 +13,8 @@ export const config = {
 };
 
 async function handler(req, res) {
+  applyApiSecurityHeaders(res);
+
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
@@ -21,33 +24,16 @@ async function handler(req, res) {
     const userId = req.userId;
     const { image, name } = req.body;
 
-    console.log('Avatar upload request received for user:', userId);
-
     if (!image) {
       return res.status(400).json({ message: 'No image provided' });
     }
 
-    // Check if image is base64 string (with or without data URL prefix)
-    let base64Data = image;
-    
-    // If it has data URL prefix, extract the base64 part
-    if (image.startsWith('data:')) {
-      const matches = image.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-      if (matches && matches.length === 3) {
-        base64Data = matches[2];
-      }
-    }
-
-    if (!base64Data) {
-      return res.status(400).json({ message: 'Invalid image format' });
-    }
-
-    console.log('Uploading to Cloudinary...');
+    const { mimeType, base64Data } = parseBase64Image(image, { maxBytes: 5 * 1024 * 1024 });
 
     // Upload to Cloudinary
     const uploadResult = await new Promise((resolve, reject) => {
       cloudinary.uploader.upload(
-        `data:image/jpeg;base64,${base64Data}`,
+        `data:${mimeType};base64,${base64Data}`,
         {
           folder: 'skillswap/avatars',
           public_id: `user_${userId}`,
@@ -64,8 +50,6 @@ async function handler(req, res) {
         }
       );
     });
-
-    console.log('Cloudinary upload successful:', uploadResult.secure_url);
 
     // Update user in database
     const user = await User.findByIdAndUpdate(
@@ -103,6 +87,13 @@ async function handler(req, res) {
         message: 'Invalid image file. Please upload a valid image (JPEG, PNG, etc.).' 
       });
     }
+
+    if (error.message.includes('Unsupported image format') || error.message.includes('Image is too large')) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
     
     if (error.http_code === 401) {
       return res.status(500).json({ 
@@ -118,4 +109,9 @@ async function handler(req, res) {
   }
 }
 
-export default requireAuth(handler);
+export default requireAuthRateLimited(handler, {
+  limit: 12,
+  windowMs: 60_000,
+  methods: ['POST'],
+  keyPrefix: 'upload:avatar'
+});

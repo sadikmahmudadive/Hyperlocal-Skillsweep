@@ -2,10 +2,24 @@ import dbConnect from '../../../lib/dbConnect';
 import User from '../../../models/User';
 import mongoose from 'mongoose';
 import { getTokenFromRequest, verifyToken } from '../../../lib/auth';
+import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
 
 const basicUserProjection = 'name avatar rating skillsOffered credits location bio';
+const writeLimiter = createLimiter({
+  limit: 40,
+  windowMs: 60_000,
+  keyGenerator: (req) => {
+    const xfwd = req.headers['x-forwarded-for'];
+    const ip = Array.isArray(xfwd)
+      ? xfwd[0]
+      : (xfwd ? xfwd.split(',')[0].trim() : req.socket?.remoteAddress || 'unknown');
+    return `users:favorites:${ip}:${req.method}`;
+  },
+});
 
 export default async function handler(req, res) {
+  applyApiSecurityHeaders(res);
+
   const token = getTokenFromRequest(req);
   if (!token) {
     return res.status(401).json({ message: 'Authentication required' });
@@ -52,6 +66,9 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
+      if (!(await enforceRateLimit(writeLimiter, req, res))) {
+        return;
+      }
       currentUser.favorites = currentUser.favorites || [];
       if (!currentUser.favorites.some((favId) => favId.toString() === providerId)) {
         currentUser.favorites.push(new mongoose.Types.ObjectId(providerId));
@@ -65,6 +82,9 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'DELETE') {
+      if (!(await enforceRateLimit(writeLimiter, req, res))) {
+        return;
+      }
       const before = (currentUser.favorites || []).length;
       currentUser.favorites = (currentUser.favorites || []).filter((favId) => favId.toString() !== providerId);
       if (currentUser.favorites.length !== before) {

@@ -1,6 +1,9 @@
 import cookie from 'cookie';
+import { applyApiSecurityHeaders } from '../../../lib/security';
 
 export default async function handler(req, res) {
+  applyApiSecurityHeaders(res);
+
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
@@ -8,7 +11,7 @@ export default async function handler(req, res) {
   res.setHeader('Set-Cookie', cookie.serialize('sseso', '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'strict',
     path: '/',
     maxAge: 0,
   }));

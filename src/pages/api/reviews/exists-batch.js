@@ -1,7 +1,7 @@
 import dbConnect from '../../../lib/dbConnect';
 import Review from '../../../models/Review';
 import mongoose from 'mongoose';
-import { requireAuth } from '../../../middleware/auth';
+import { requireAuthRateLimited } from '../../../middleware/auth';
 
 async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -39,4 +39,9 @@ async function handler(req, res) {
   }
 }
 
-export default requireAuth(handler);
+export default requireAuthRateLimited(handler, {
+  limit: 30,
+  windowMs: 60_000,
+  methods: ['POST'],
+  keyPrefix: 'reviews:exists-batch'
+});

@@ -1,6 +1,6 @@
 import dbConnect from '../../../../lib/dbConnect';
 import payments from '../../../../lib/payments';
-import { requireAuth } from '../../../../middleware/auth';
+import { requireAuthRateLimited } from '../../../../middleware/auth';
 import User from '../../../../models/User';
 import TopUpIntent from '../../../../models/TopUpIntent';
 import { getStripeClient, getAppBaseUrl, toMinorUnits, describeCredits, stripeCurrency } from '../../../../lib/payments/stripe';
@@ -111,4 +111,9 @@ async function handler(req, res) {
   }
 }
 
-export default requireAuth(handler);
+export default requireAuthRateLimited(handler, {
+  limit: 10,
+  windowMs: 60_000,
+  methods: ['POST'],
+  keyPrefix: 'payments:stripe:checkout'
+});

@@ -1,16 +1,33 @@
 import dbConnect from '../../../lib/dbConnect';
 import User from '../../../models/User';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import cookie from 'cookie';
+import { signToken } from '../../../lib/auth';
+import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
+
+const registerLimiter = createLimiter({
+  limit: 5,
+  windowMs: 30 * 60 * 1000,
+  keyGenerator: (req) => {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+    return `${ip}:auth:register:${email}`;
+  },
+});
 
 function escapeRegExp(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 export default async function handler(req, res) {
+  applyApiSecurityHeaders(res);
+
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
+  }
+
+  if (!(await enforceRateLimit(registerLimiter, req, res))) {
+    return;
   }
 
   try {
@@ -48,16 +65,7 @@ export default async function handler(req, res) {
       location: address ? { address: String(address).trim() } : undefined,
     });
 
-    // Generate JWT token
-    if (!process.env.JWT_SECRET) {
-      console.error('JWT_SECRET is not set');
-      return res.status(500).json({ message: 'Server configuration error' });
-    }
-    const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    const token = signToken(user._id);
 
     // Return user data without password
     const userData = {
@@ -75,7 +83,7 @@ export default async function handler(req, res) {
     res.setHeader('Set-Cookie', cookie.serialize('sseso', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'strict',
       path: '/',
       maxAge: 7 * 24 * 60 * 60,
     }));

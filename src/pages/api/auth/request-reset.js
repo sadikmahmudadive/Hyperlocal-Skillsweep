@@ -2,9 +2,25 @@ import dbConnect from '../../../lib/dbConnect';
 import User from '../../../models/User';
 import jwt from 'jsonwebtoken';
 import sgMail from '@sendgrid/mail';
+import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
+
+const requestResetLimiter = createLimiter({
+  limit: 5,
+  windowMs: 15 * 60 * 1000,
+  keyGenerator: (req) => {
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+    return `${ip}:auth:request-reset:${email}`;
+  },
+});
 
 export default async function handler(req, res) {
+  applyApiSecurityHeaders(res);
+
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
+  if (!(await enforceRateLimit(requestResetLimiter, req, res))) {
+    return;
+  }
   try {
     await dbConnect();
     const { email } = req.body || {};
@@ -45,8 +61,11 @@ export default async function handler(req, res) {
       }
     }
 
-  // Return the link for development or if email sending failed so it can be used for testing
-  return res.status(200).json({ message: 'Reset link generated (development)', resetLink });
+    if (process.env.NODE_ENV !== 'production') {
+      return res.status(200).json({ message: 'Reset link generated (development)', resetLink });
+    }
+
+    return res.status(200).json({ message: 'If an account exists, you will receive reset instructions shortly.' });
   } catch (err) {
     console.error('Request reset error', err);
     res.status(500).json({ message: 'Internal server error' });

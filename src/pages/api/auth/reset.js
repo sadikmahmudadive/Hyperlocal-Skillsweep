@@ -3,9 +3,21 @@ import User from '../../../models/User';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import cookie from 'cookie';
+import { signToken } from '../../../lib/auth';
+import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
+
+const resetLimiter = createLimiter({
+  limit: 10,
+  windowMs: 30 * 60 * 1000,
+});
 
 export default async function handler(req, res) {
+  applyApiSecurityHeaders(res);
+
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
+  if (!(await enforceRateLimit(resetLimiter, req, res))) {
+    return;
+  }
   try {
     const { token, password } = req.body || {};
     if (!token || !password) return res.status(400).json({ message: 'Token and password are required' });
@@ -20,18 +32,18 @@ export default async function handler(req, res) {
     const user = await User.findById(payload.userId);
     if (!user) return res.status(400).json({ message: 'Invalid token (no user)' });
 
-    if (String(password).length < 6) return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    if (String(password).length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters' });
 
     const hashed = await bcrypt.hash(password, 12);
     user.password = hashed;
     await user.save();
 
     // Optionally issue a new JWT cookie so user is logged in after reset
-    const newToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const newToken = signToken(user._id);
     res.setHeader('Set-Cookie', cookie.serialize('sseso', newToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'strict',
       path: '/',
       maxAge: 7 * 24 * 60 * 60,
     }));

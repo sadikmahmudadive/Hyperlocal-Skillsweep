@@ -1,6 +1,7 @@
 import dbConnect from '../../../lib/dbConnect';
 import cloudinary from '../../../lib/cloudinary';
-import { requireAuth } from '../../../middleware/auth';
+import { requireAuthRateLimited } from '../../../middleware/auth';
+import { applyApiSecurityHeaders, parseBase64Image } from '../../../lib/security';
 
 export const config = {
   api: {
@@ -11,6 +12,8 @@ export const config = {
 };
 
 async function handler(req, res) {
+  applyApiSecurityHeaders(res);
+
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
@@ -24,23 +27,12 @@ async function handler(req, res) {
       return res.status(400).json({ message: 'No image provided' });
     }
 
-    // Check if image is base64 string
-    let base64Data = image;
-    if (image.startsWith('data:')) {
-      const matches = image.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-      if (matches && matches.length === 3) {
-        base64Data = matches[2];
-      }
-    }
-
-    if (!base64Data) {
-      return res.status(400).json({ message: 'Invalid image format' });
-    }
+    const { mimeType, base64Data } = parseBase64Image(image, { maxBytes: 5 * 1024 * 1024 });
 
     // Upload to Cloudinary
     const uploadResult = await new Promise((resolve, reject) => {
       cloudinary.uploader.upload(
-        `data:image/jpeg;base64,${base64Data}`,
+        `data:${mimeType};base64,${base64Data}`,
         {
           folder: 'skillswap/chat_images',
           resource_type: 'image',
@@ -65,8 +57,17 @@ async function handler(req, res) {
 
   } catch (error) {
     console.error('Chat upload error:', error);
+    const msg = String(error?.message || 'Upload failed');
+    if (msg.includes('image')) {
+      return res.status(400).json({ message: msg });
+    }
     res.status(500).json({ message: 'Upload failed' });
   }
 }
 
-export default requireAuth(handler);
+export default requireAuthRateLimited(handler, {
+  limit: 20,
+  windowMs: 60_000,
+  methods: ['POST'],
+  keyPrefix: 'chat:upload'
+});

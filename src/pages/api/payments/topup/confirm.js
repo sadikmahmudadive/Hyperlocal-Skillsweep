@@ -1,7 +1,7 @@
 import dbConnect from '../../../../lib/dbConnect';
 import TopUpIntent from '../../../../models/TopUpIntent';
 import User from '../../../../models/User';
-import { requireAuth } from '../../../../middleware/auth';
+import { requireAuthRateLimited } from '../../../../middleware/auth';
 import payments from '../../../../lib/payments';
 
 async function handler(req, res) {
@@ -41,4 +41,9 @@ async function handler(req, res) {
   }
 }
 
-export default requireAuth(handler);
+export default requireAuthRateLimited(handler, {
+  limit: 20,
+  windowMs: 60_000,
+  methods: ['POST'],
+  keyPrefix: 'payments:topup:confirm'
+});

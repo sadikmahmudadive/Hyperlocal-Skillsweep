@@ -3,6 +3,7 @@ import payments from '../../../../lib/payments';
 import TopUpIntent from '../../../../models/TopUpIntent';
 import User from '../../../../models/User';
 import { getStripeClient } from '../../../../lib/payments/stripe';
+import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../../lib/security';
 
 export const config = {
   api: {
@@ -11,6 +12,17 @@ export const config = {
 };
 
 const relevantEvents = new Set(['checkout.session.completed']);
+const webhookLimiter = createLimiter({
+  limit: 120,
+  windowMs: 60_000,
+  keyGenerator: (req) => {
+    const xfwd = req.headers['x-forwarded-for'];
+    const ip = Array.isArray(xfwd)
+      ? xfwd[0]
+      : (xfwd ? xfwd.split(',')[0].trim() : req.socket?.remoteAddress || 'unknown');
+    return `payments:webhook:${ip}`;
+  },
+});
 
 function bufferFromStream(req) {
   return new Promise((resolve, reject) => {
@@ -22,9 +34,15 @@ function bufferFromStream(req) {
 }
 
 async function handler(req, res) {
+  applyApiSecurityHeaders(res);
+
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).end('Method Not Allowed');
+  }
+
+  if (!(await enforceRateLimit(webhookLimiter, req, res))) {
+    return;
   }
 
   if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {

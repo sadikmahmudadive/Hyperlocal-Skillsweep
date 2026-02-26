@@ -1,5 +1,6 @@
 import { requireAuth } from '../../../middleware/auth';
 import { addClient, removeClient } from '../../../lib/sse';
+import { applyApiSecurityHeaders } from '../../../lib/security';
 
 export const config = {
   api: {
@@ -8,6 +9,8 @@ export const config = {
 };
 
 async function handler(req, res) {
+  applyApiSecurityHeaders(res);
+
   if (req.method !== 'GET') {
     return res.status(405).end('Method not allowed');
   }
@@ -17,6 +20,7 @@ async function handler(req, res) {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache, no-transform',
     Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no',
   });
   res.flushHeaders?.();
 

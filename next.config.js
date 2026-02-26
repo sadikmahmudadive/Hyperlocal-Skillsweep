@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  poweredByHeader: false,
   images: {
     domains: ['res.cloudinary.com', 'images.unsplash.com'],
   },
@@ -14,18 +15,23 @@ const nextConfig = {
     CUSTOM_KEY: process.env.CUSTOM_KEY || '',
   },
   async headers() {
+    const isDev = process.env.NODE_ENV !== 'production';
     const csp = [
       "default-src 'self'",
-      "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://api.mapbox.com https://*.tiles.mapbox.com",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "form-action 'self'",
+      "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://api.mapbox.com https://*.tiles.mapbox.com https://*.stripe.com",
       "style-src 'self' 'unsafe-inline' https://api.mapbox.com",
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://api.mapbox.com",
-      "connect-src 'self' https://api.mapbox.com https://events.mapbox.com",
+      `script-src 'self' https://api.mapbox.com https://js.stripe.com${isDev ? " 'unsafe-eval' 'unsafe-inline'" : ''}`,
+      "connect-src 'self' https://api.mapbox.com https://events.mapbox.com https://api.stripe.com https://*.stripe.com",
       "font-src 'self' data: https://api.mapbox.com",
       "worker-src 'self' blob:",
       "child-src 'self' blob:",
-      "frame-ancestors 'self'",
-      // Mapbox tiles/styles
+      "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+      "frame-ancestors 'none'",
       "manifest-src 'self'",
+      ...(isDev ? [] : ["upgrade-insecure-requests"]),
     ].join('; ');
     const headers = [
       { key: 'Content-Security-Policy', value: csp },

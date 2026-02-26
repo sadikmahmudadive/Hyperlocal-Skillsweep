@@ -1,7 +1,7 @@
 import dbConnect from '../../../lib/dbConnect';
 import Conversation from '../../../models/Conversation';
 import User from '../../../models/User';
-import { requireAuth } from '../../../middleware/auth';
+import { requireAuthRateLimited } from '../../../middleware/auth';
 import { notifyUsers } from '../../../lib/sse';
 
 async function handler(req, res) {
@@ -97,4 +97,9 @@ async function handler(req, res) {
   }
 }
 
-export default requireAuth(handler);
+export default requireAuthRateLimited(handler, {
+  limit: 60,
+  windowMs: 60_000,
+  methods: ['POST'],
+  keyPrefix: 'chat:messages'
+});

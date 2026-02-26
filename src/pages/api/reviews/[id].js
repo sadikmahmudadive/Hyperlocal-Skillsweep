@@ -2,7 +2,7 @@ import dbConnect from '../../../lib/dbConnect';
 import Review from '../../../models/Review';
 import User from '../../../models/User';
 import mongoose from 'mongoose';
-import { requireAuth } from '../../../middleware/auth';
+import { requireAuthRateLimited } from '../../../middleware/auth';
 
 async function handler(req, res) {
   const { id } = req.query;
@@ -61,4 +61,9 @@ async function handler(req, res) {
   }
 }
 
-export default requireAuth(handler);
+export default requireAuthRateLimited(handler, {
+  limit: 20,
+  windowMs: 60_000,
+  methods: ['PUT', 'DELETE'],
+  keyPrefix: 'reviews:item'
+});
