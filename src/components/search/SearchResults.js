@@ -6,6 +6,13 @@ export default function SearchResults({ users, loading, onUserSelect, onHire, cu
   const router = useRouter();
   const { user: currentUser } = useAuth();
 
+  const resolveAvatarUrl = (user) => {
+    if (typeof user?.avatar === 'string' && user.avatar.trim()) return user.avatar;
+    if (typeof user?.avatar?.url === 'string' && user.avatar.url.trim()) return user.avatar.url;
+    if (typeof user?.photoURL === 'string' && user.photoURL.trim()) return user.photoURL;
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=0ea5e9&color=fff&size=128&bold=true`;
+  };
+
   const handleUserClick = (user) => {
     // Use the correct ID field - try _id first, then id
     const userId = user._id || user.id;
@@ -114,7 +121,7 @@ export default function SearchResults({ users, loading, onUserSelect, onHire, cu
                 <div className="flex items-start gap-4">
                   <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-soft surface-card">
                     <img
-                      src={user.avatar?.url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'U')}&background=0ea5e9&color=fff&size=128&bold=true`}
+                      src={resolveAvatarUrl(user)}
                       alt={user.name || 'User avatar'}
                       className="h-full w-full object-cover"
                       loading="lazy"
@@ -136,7 +143,7 @@ export default function SearchResults({ users, loading, onUserSelect, onHire, cu
                           {user.bio || 'This neighbor hasn\'t added a bio yet, but is ready to swap skills!'}
                         </p>
                       </div>
-                      {currentUser && currentUser.id !== userId && (
+                      {currentUser && String(currentUser.id || currentUser._id) !== userId && (
                         <div className="flex items-center gap-2">
                           <button
                             onClick={(e) => { e.stopPropagation(); onToggleFavorite?.(user); }}

@@ -209,7 +209,11 @@ export default function SearchPage() {
         params.append('lat', coords[1]);
       }
 
-      const response = await fetch(`/api/users/search?${params}`);
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
+      const response = await fetch(`/api/users/search?${params}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
+      });
       const data = await response.json();
 
       if (response.ok) {
