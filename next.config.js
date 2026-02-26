@@ -23,7 +23,7 @@ const nextConfig = {
       "form-action 'self'",
       "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://api.mapbox.com https://*.tiles.mapbox.com https://*.stripe.com",
       "style-src 'self' 'unsafe-inline' https://api.mapbox.com",
-      `script-src 'self' 'unsafe-inline' https://api.mapbox.com https://js.stripe.com${isDev ? " 'unsafe-eval'" : ''}`,
+      `script-src 'self' 'unsafe-inline' https://api.mapbox.com https://js.stripe.com https://vercel.live https://*.vercel.live${isDev ? " 'unsafe-eval'" : ''}`,
       "connect-src 'self' https://api.mapbox.com https://events.mapbox.com https://api.stripe.com https://*.stripe.com",
       "font-src 'self' data: https://api.mapbox.com",
       "worker-src 'self' blob:",
