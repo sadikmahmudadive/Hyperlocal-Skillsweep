@@ -1,14 +1,11 @@
-import dbConnect from '../../../lib/dbConnect';
-import Conversation from '../../../models/Conversation';
-import User from '../../../models/User';
 import { requireAuthRateLimited } from '../../../middleware/auth';
 import { notifyUsers } from '../../../lib/sse';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
+import { addConversationMessage, getConversationById, getUsersByIds } from '../../../lib/firestoreStore';
 
 async function handler(req, res) {
   if (req.method === 'GET') {
     try {
-      await dbConnect();
       const { conversationId } = req.query;
       let { limit, before } = req.query;
       const userId = req.userId;
@@ -16,12 +13,9 @@ async function handler(req, res) {
       limit = Math.max(1, Math.min(parseInt(limit || '30', 10) || 30, 100));
       const beforeDate = before ? new Date(before) : null;
 
-      const conversation = await Conversation.findOne({
-        _id: conversationId,
-        participants: userId
-      }).select('messages participants');
+      const conversation = await getConversationById(conversationId);
 
-      if (!conversation) {
+      if (!conversation || !(conversation.participants || []).map(String).includes(String(userId))) {
         return res.status(404).json({ message: 'Conversation not found' });
       }
 
@@ -36,8 +30,8 @@ async function handler(req, res) {
 
       // Populate sender minimal info for this page
       const senderIds = Array.from(new Set(page.map(m => String(m.sender))));
-      const senders = await User.find({ _id: { $in: senderIds } }).select('name avatar');
-      const sMap = new Map(senders.map(u => [String(u._id), { _id: u._id, name: u.name, avatar: u.avatar }]));
+      const senders = await getUsersByIds(senderIds);
+      const sMap = new Map(senders.map(u => [String(u.id || u._id), { _id: u.id || u._id, name: u.name, avatar: u.avatar }]));
       const shaped = page.map(m => ({
         _id: m._id,
         sender: sMap.get(String(m.sender)) || { _id: m.sender },
@@ -53,38 +47,26 @@ async function handler(req, res) {
     }
   } else if (req.method === 'POST') {
     try {
-      await dbConnect();
       const { conversationId, content, type } = req.body;
       const userId = req.userId;
 
-      const conversation = await Conversation.findOne({
-        _id: conversationId,
-        participants: userId
-      });
+      const conversation = await getConversationById(conversationId);
 
-      if (!conversation) {
+      if (!conversation || !(conversation.participants || []).map(String).includes(String(userId))) {
         return res.status(404).json({ message: 'Conversation not found' });
       }
 
-      const newMessage = {
+      const updated = await addConversationMessage(conversationId, {
         sender: userId,
         content,
         read: false,
         type: type || 'text'
-      };
-
-      conversation.messages.push(newMessage);
-      conversation.lastMessage = conversation.messages[conversation.messages.length - 1];
-      await conversation.save();
-
-      // Populate sender info for the response
-      await conversation.populate('messages.sender', 'name avatar');
-
-      const savedMessage = conversation.messages[conversation.messages.length - 1];
+      });
+      const savedMessage = updated?.lastMessage;
 
       try {
-        notifyUsers(conversation.participants.map(p => String(p)), 'message', {
-          conversationId: conversation._id,
+        notifyUsers((conversation.participants || []).map(p => String(p)), 'message', {
+          conversationId,
           message: savedMessage
         });
       } catch (_) {}

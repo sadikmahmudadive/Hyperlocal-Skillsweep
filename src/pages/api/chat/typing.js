@@ -1,8 +1,7 @@
-import dbConnect from '../../../lib/dbConnect';
-import Conversation from '../../../models/Conversation';
 import { requireAuthRateLimited } from '../../../middleware/auth';
 import { notifyUsers } from '../../../lib/sse';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
+import { getConversationById } from '../../../lib/firestoreStore';
 
 async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -10,21 +9,20 @@ async function handler(req, res) {
   }
 
   try {
-    await dbConnect();
     const userId = req.userId;
     const { conversationId, isTyping } = req.body || {};
     if (!conversationId) {
       return res.status(400).json({ message: 'conversationId is required' });
     }
 
-    const conv = await Conversation.findById(conversationId).select('participants');
+    const conv = await getConversationById(conversationId);
     if (!conv) return res.status(404).json({ message: 'Conversation not found' });
-    if (!conv.participants.map(String).includes(String(userId))) {
+    if (!(conv.participants || []).map(String).includes(String(userId))) {
       return res.status(403).json({ message: 'Forbidden' });
     }
 
     try {
-      notifyUsers(conv.participants.map(p => String(p)), 'typing', {
+      notifyUsers((conv.participants || []).map(p => String(p)), 'typing', {
         conversationId,
         userId,
         isTyping: !!isTyping,

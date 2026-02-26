@@ -1,9 +1,7 @@
-import dbConnect from '../../../../lib/dbConnect';
-import TopUpIntent from '../../../../models/TopUpIntent';
-import User from '../../../../models/User';
 import { requireAuthRateLimited } from '../../../../middleware/auth';
 import payments from '../../../../lib/payments';
 import { RATE_LIMIT_PROFILES } from '../../../../lib/rateLimitProfiles';
+import { findTopUpIntentById, getUserById, patchTopUpIntent, patchUser } from '../../../../lib/firestoreStore';
 
 async function handler(req, res) {
   const method = (req.method || '').toUpperCase();
@@ -15,27 +13,31 @@ async function handler(req, res) {
     res.setHeader('Allow', 'POST, OPTIONS');
     return res.status(405).json({ success: false, message: 'Method not allowed' });
   }
-  await dbConnect();
-
   try {
     const { intentId } = req.body;
     if (!intentId) return res.status(400).json({ success: false, message: 'intentId required' });
-    const intent = await TopUpIntent.findById(intentId);
+    const intent = await findTopUpIntentById(intentId);
     if (!intent) return res.status(404).json({ success: false, message: 'Intent not found' });
-    if (intent.user.toString() !== req.userId) return res.status(403).json({ success: false, message: 'Forbidden' });
+    if (String(intent.user) !== String(req.userId)) return res.status(403).json({ success: false, message: 'Forbidden' });
     if (intent.status === 'confirmed') {
       return res.status(200).json({ success: true, alreadyConfirmed: true, credits: intent.credits, balance: undefined });
     }
 
     // Stub provider verification: in production validate provider transaction reference.
-    intent.status = 'confirmed';
-    intent.confirmedAt = new Date();
-    await intent.save();
+    await patchTopUpIntent(intentId, { status: 'confirmed', confirmedAt: new Date().toISOString() });
 
-    const user = await User.findById(req.userId);
-    const balance = await payments.recordLedgerEntry(user, 'topup', intent.credits, `Top up via ${intent.provider}`);
+    const user = await getUserById(req.userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    const nextBalance = (user.credits || 0) + Number(intent.credits || 0);
+    await patchUser(req.userId, {
+      credits: nextBalance,
+      ledger: [
+        ...(user.ledger || []),
+        { type: 'topup', amount: intent.credits, balanceAfter: nextBalance, note: `Top up via ${intent.provider}` }
+      ]
+    });
 
-    return res.status(200).json({ success: true, creditsAdded: intent.credits, balance, currency: payments.paymentConfig.currency });
+    return res.status(200).json({ success: true, creditsAdded: intent.credits, balance: nextBalance, currency: payments.paymentConfig.currency });
   } catch (e) {
     console.error('Top-up confirm error', e);
     return res.status(500).json({ success: false, message: 'Internal error' });

@@ -1,8 +1,6 @@
-import dbConnect from '../../../lib/dbConnect';
-import Review from '../../../models/Review';
-import mongoose from 'mongoose';
 import { requireAuthRateLimited } from '../../../middleware/auth';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
+import { listReviewsForTransactions } from '../../../lib/firestoreStore';
 
 async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -10,28 +8,24 @@ async function handler(req, res) {
   }
 
   try {
-    await dbConnect();
     const userId = req.userId;
-  const { transactionIds } = req.body || {};
+    const { transactionIds } = req.body || {};
 
     if (!Array.isArray(transactionIds) || transactionIds.length === 0) {
       return res.status(400).json({ message: 'transactionIds array is required' });
     }
 
-    const validIds = transactionIds.filter((id) => mongoose.Types.ObjectId.isValid(id));
+    const validIds = transactionIds.filter((id) => !!id);
     if (validIds.length === 0) {
       return res.status(200).json({ reviewedTransactionIds: [], reviewsByTransaction: {} });
     }
 
-    const reviews = await Review.find({
-      reviewer: userId,
-      transaction: { $in: validIds }
-    }).select('transaction rating comment createdAt');
+    const reviews = await listReviewsForTransactions(userId, validIds);
 
     const reviewedIds = reviews.map(r => String(r.transaction));
     const map = {};
     for (const r of reviews) {
-      map[String(r.transaction)] = { id: String(r._id), rating: r.rating, comment: r.comment || '', createdAt: r.createdAt };
+      map[String(r.transaction)] = { id: String(r.id || r._id), rating: r.rating, comment: r.comment || '', createdAt: r.createdAt };
     }
     res.status(200).json({ reviewedTransactionIds: reviewedIds, reviewsByTransaction: map });
   } catch (error) {

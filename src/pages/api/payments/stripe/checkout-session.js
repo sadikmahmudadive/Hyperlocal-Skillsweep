@@ -1,10 +1,8 @@
-import dbConnect from '../../../../lib/dbConnect';
 import payments from '../../../../lib/payments';
 import { requireAuthRateLimited } from '../../../../middleware/auth';
-import User from '../../../../models/User';
-import TopUpIntent from '../../../../models/TopUpIntent';
 import { getStripeClient, getAppBaseUrl, toMinorUnits, describeCredits, stripeCurrency } from '../../../../lib/payments/stripe';
 import { RATE_LIMIT_PROFILES } from '../../../../lib/rateLimitProfiles';
+import { createTopUpIntent, findTopUpIntentByIdempotencyKey, getUserById, patchTopUpIntent } from '../../../../lib/firestoreStore';
 
 async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -16,8 +14,6 @@ async function handler(req, res) {
     return res.status(500).json({ success: false, message: 'Stripe is not configured. Set STRIPE_SECRET_KEY.' });
   }
 
-  await dbConnect();
-
   try {
     const { credits } = req.body || {};
     const numericCredits = Number(credits);
@@ -26,19 +22,19 @@ async function handler(req, res) {
       return res.status(400).json({ success: false, message: validation });
     }
 
-    const user = await User.findById(req.userId);
+    const user = await getUserById(req.userId);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
     const provider = 'stripe';
     const amountFiat = payments.computeFiat(numericCredits);
-    const idempotencyKey = payments.createIdempotencyKey(user._id.toString(), numericCredits, provider);
+    const idempotencyKey = payments.createIdempotencyKey(String(user.id || user._id), numericCredits, provider);
 
-    let intent = await TopUpIntent.findOne({ idempotencyKey, status: { $in: ['initiated', 'pending'] } });
+    let intent = await findTopUpIntentByIdempotencyKey(idempotencyKey);
     if (!intent) {
-      intent = await TopUpIntent.create({
-        user: user._id,
+      intent = await createTopUpIntent({
+        user: user.id || user._id,
         provider,
         credits: numericCredits,
         amountFiat,
@@ -59,10 +55,10 @@ async function handler(req, res) {
       allow_promotion_codes: true,
       billing_address_collection: 'auto',
       customer_email: user.email,
-      client_reference_id: intent._id.toString(),
+      client_reference_id: String(intent.id || intent._id),
       metadata: {
-        intentId: intent._id.toString(),
-        userId: user._id.toString(),
+        intentId: String(intent.id || intent._id),
+        userId: String(user.id || user._id),
         credits: String(numericCredits),
       },
       line_items: [
@@ -82,21 +78,22 @@ async function handler(req, res) {
       cancel_url: cancelUrl,
     });
 
-    intent.status = 'pending';
-    intent.externalRef = session.id;
-    intent.stripeSessionId = session.id;
-    intent.stripePaymentIntentId = typeof session.payment_intent === 'string' ? session.payment_intent : null;
-    intent.metadata = {
-      ...(intent.metadata || {}),
-      checkoutSessionId: session.id,
-    };
-    await intent.save();
+    intent = await patchTopUpIntent(intent.id || intent._id, {
+      status: 'pending',
+      externalRef: session.id,
+      stripeSessionId: session.id,
+      stripePaymentIntentId: typeof session.payment_intent === 'string' ? session.payment_intent : null,
+      metadata: {
+        ...(intent.metadata || {}),
+        checkoutSessionId: session.id,
+      }
+    });
 
     return res.status(200).json({
       success: true,
       checkoutUrl: session.url,
       intent: {
-        id: intent._id,
+        id: intent.id || intent._id,
         provider: intent.provider,
         credits: intent.credits,
         amountFiat: intent.amountFiat,

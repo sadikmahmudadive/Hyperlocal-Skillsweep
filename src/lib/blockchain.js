@@ -1,6 +1,5 @@
 import { ethers } from 'ethers';
 import crypto from 'crypto';
-import Transaction from '../models/Transaction';
 
 // Anchors a compact proof of the transaction on-chain by sending a tx with data payload.
 // Controlled via environment variables: ENABLE_CHAIN, CHAIN_RPC_URL, CHAIN_PRIVATE_KEY, CHAIN_NAME
@@ -16,7 +15,7 @@ export async function anchorTransactionProof(txDoc) {
 
   // Create a compact proof (sha256 of salient fields)
   const payload = JSON.stringify({
-    txId: txDoc._id.toString(),
+    txId: String(txDoc._id || txDoc.id),
     provider: txDoc.provider?.toString(),
     receiver: txDoc.receiver?.toString(),
     credits: txDoc.escrowAmount || txDoc.credits,
@@ -43,13 +42,6 @@ export async function anchorTransactionProof(txDoc) {
     const resp = await wallet.sendTransaction(tx);
     // wait for 1 confirmation (optional)
     await resp.wait(1);
-
-    // update transaction doc with anchor info
-    txDoc.chainName = chainName;
-    txDoc.onChainTxHash = resp.hash;
-    txDoc.onChainProof = hash;
-    txDoc.anchoredAt = new Date();
-    await txDoc.save();
 
     return { ok: true, hash: resp.hash, proof: hash };
   } catch (err) {

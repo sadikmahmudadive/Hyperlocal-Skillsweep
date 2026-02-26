@@ -1,8 +1,6 @@
-import dbConnect from '../../../lib/dbConnect';
-import Conversation from '../../../models/Conversation';
-import User from '../../../models/User';
 import { requireAuthRateLimited } from '../../../middleware/auth';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
+import { getUsersByIds, listConversationsForUser, patchUser } from '../../../lib/firestoreStore';
 
 async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -10,38 +8,39 @@ async function handler(req, res) {
   }
 
   try {
-    await dbConnect();
     const userId = req.userId;
 
     // Best-effort presence update
     try {
-      await User.findByIdAndUpdate(userId, { lastActive: new Date() }, { new: false });
+      await patchUser(userId, { lastActive: new Date().toISOString() });
     } catch (_) {}
 
-    const conversations = await Conversation.find({
-      participants: userId
-    })
-    .populate('participants', 'name avatar rating lastActive isAvailable')
-    .sort({ updatedAt: -1 })
-    .limit(50);
+    const conversations = await listConversationsForUser(userId);
+    const participantIds = Array.from(new Set(conversations.flatMap((c) => c.participants || []).map(String)));
+    const participants = await getUsersByIds(participantIds);
+    const participantMap = new Map(participants.map((p) => [String(p.id || p._id), p]));
 
     // Attach unreadCount per conversation (messages from others that are not read)
-    const withUnread = conversations.map((c) => {
-      const obj = c.toObject();
+    const withUnread = conversations.map((obj) => {
       const unreadCount = (obj.messages || []).reduce((acc, m) => {
         const senderId = typeof m.sender === 'object' && m.sender?._id ? m.sender._id : m.sender;
         return acc + (!m.read && String(senderId) !== String(userId) ? 1 : 0);
       }, 0);
-      obj.unreadCount = unreadCount;
-      if (obj.lastMessage && typeof obj.lastMessage === 'object' && !Array.isArray(obj.lastMessage)) {
-        obj.lastMessage = {
-          ...obj.lastMessage,
-          sender: obj.lastMessage.sender ? String(obj.lastMessage.sender) : null
+      const normalizedParticipants = (obj.participants || []).map((pid) => participantMap.get(String(pid)) || { _id: String(pid), id: String(pid) });
+      const normalized = {
+        ...obj,
+        participants: normalizedParticipants,
+      };
+      normalized.unreadCount = unreadCount;
+      if (normalized.lastMessage && typeof normalized.lastMessage === 'object' && !Array.isArray(normalized.lastMessage)) {
+        normalized.lastMessage = {
+          ...normalized.lastMessage,
+          sender: normalized.lastMessage.sender ? String(normalized.lastMessage.sender) : null
         };
       } else {
-        obj.lastMessage = null;
+        normalized.lastMessage = null;
       }
-      return obj;
+      return normalized;
     });
 
     res.status(200).json({ conversations: withUnread });

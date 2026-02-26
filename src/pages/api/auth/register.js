@@ -1,10 +1,11 @@
-import dbConnect from '../../../lib/dbConnect';
-import User from '../../../models/User';
 import bcrypt from 'bcryptjs';
 import cookie from 'cookie';
+import { getAuth } from 'firebase-admin/auth';
 import { signToken } from '../../../lib/auth';
 import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
+import { createUser, findUserByEmail, toUserResponse } from '../../../lib/userStore';
+import { getFirebaseApp, isFirebaseAdminConfigured } from '../../../lib/firebaseAdmin';
 
 const registerLimiter = createLimiter({
   ...RATE_LIMIT_PROFILES.authRegister,
@@ -14,10 +15,6 @@ const registerLimiter = createLimiter({
     return `${ip}:auth:register:${email}`;
   },
 });
-
-function escapeRegExp(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
 
 export default async function handler(req, res) {
   applyApiSecurityHeaders(res);
@@ -31,7 +28,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    await dbConnect();
     const { name, email, password, address, bio } = req.body || {};
 
     // Basic validation
@@ -46,7 +42,7 @@ export default async function handler(req, res) {
     const normEmail = String(email).trim().toLowerCase();
 
     // Check if user exists (case-insensitive to align with possible unique index collation)
-    const existingUser = await User.findOne({ email: { $regex: `^${escapeRegExp(normEmail)}$`, $options: 'i' } });
+    const existingUser = await findUserByEmail(normEmail);
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists with this email' });
     }
@@ -55,7 +51,7 @@ export default async function handler(req, res) {
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Create user
-    const user = await User.create({
+    const user = await createUser({
       name: String(name).trim(),
       email: normEmail,
       password: hashedPassword,
@@ -65,19 +61,24 @@ export default async function handler(req, res) {
       location: address ? { address: String(address).trim() } : undefined,
     });
 
-    const token = signToken(user._id);
+    if (isFirebaseAdminConfigured()) {
+      try {
+        await getAuth(getFirebaseApp()).createUser({
+          email: normEmail,
+          password,
+          displayName: String(name).trim(),
+        });
+      } catch (firebaseAuthError) {
+        if (firebaseAuthError?.code !== 'auth/email-already-exists') {
+          console.error('Firebase Auth mirror create failed:', firebaseAuthError);
+        }
+      }
+    }
+
+    const token = signToken(user.id || user._id);
 
     // Return user data without password
-    const userData = {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      credits: user.credits,
-      bio: user.bio,
-      address: user.address,
-      favorites: [],
-      savedSearches: []
-    };
+    const userData = toUserResponse(user);
 
     // Set HttpOnly cookie for SSE auth
     res.setHeader('Set-Cookie', cookie.serialize('sseso', token, {
@@ -104,7 +105,7 @@ export default async function handler(req, res) {
       }
       return res.status(400).json({ message: `${dupField === 'email' ? 'Email' : dupField} already in use` });
     }
-    // Mongoose validation error
+    // Validation error
     if (error && error.name === 'ValidationError') {
       const first = Object.values(error.errors)[0];
       return res.status(400).json({ message: first?.message || 'Invalid data' });

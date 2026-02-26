@@ -1,6 +1,6 @@
-import dbConnect from '../../../lib/dbConnect';
 import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
+import { getFirestoreDb } from '../../../lib/firebaseAdmin';
 
 const limiter = createLimiter(RATE_LIMIT_PROFILES.testHealth);
 
@@ -20,9 +20,9 @@ export default async function handler(req, res) {
   const start = Date.now();
   let db = { connected: false, name: null, host: null };
   try {
-    const conn = await dbConnect();
-    const c = conn.connection;
-    db = { connected: c?.readyState === 1, name: c?.name || null, host: c?.host || null };
+    const fs = getFirestoreDb();
+    await fs.collection('health').limit(1).get();
+    db = { connected: true, name: process.env.FIREBASE_PROJECT_ID || null, host: 'firestore.googleapis.com' };
   } catch (e) {
     db = { connected: false, error: e?.message || 'db error' };
   }

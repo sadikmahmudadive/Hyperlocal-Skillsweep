@@ -1,8 +1,6 @@
-import dbConnect from '../../../lib/dbConnect';
-import Review from '../../../models/Review';
-import mongoose from 'mongoose';
 import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
+import { reviewStats } from '../../../lib/firestoreStore';
 
 const limiter = createLimiter(RATE_LIMIT_PROFILES.publicReviewStats);
 
@@ -14,38 +12,13 @@ export default async function handler(req, res) {
   }
   try {
     if (!(await enforceRateLimit(limiter, req, res))) return;
-    await dbConnect();
     const { userId } = req.query;
-    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+    if (!userId) {
       return res.status(400).json({ message: 'Invalid user ID' });
     }
 
-    const pipeline = [
-      { $match: { targetUser: new mongoose.Types.ObjectId(userId) } },
-      {
-        $group: {
-          _id: '$rating',
-          count: { $sum: 1 }
-        }
-      }
-    ];
-
-    const grouped = await Review.aggregate(pipeline);
-    const stars = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    let total = 0;
-    let sum = 0;
-    for (const g of grouped) {
-      const r = String(g._id);
-      const c = g.count || 0;
-      if (stars[r] !== undefined) {
-        stars[r] = c;
-        total += c;
-        sum += (parseInt(r, 10) || 0) * c;
-      }
-    }
-    const average = total ? Math.round((sum / total) * 10) / 10 : 0;
-
-    res.status(200).json({ average, count: total, distribution: stars });
+    const stats = await reviewStats(userId);
+    res.status(200).json({ average: stats.average, count: stats.count, distribution: stats.distribution });
   } catch (error) {
     console.error('Get review stats error:', error);
     res.status(500).json({ message: 'Error fetching review stats' });

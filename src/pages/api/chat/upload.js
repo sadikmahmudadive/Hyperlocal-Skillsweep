@@ -1,4 +1,3 @@
-import dbConnect from '../../../lib/dbConnect';
 import cloudinary from '../../../lib/cloudinary';
 import { requireAuthRateLimited } from '../../../middleware/auth';
 import { applyApiSecurityHeaders, parseBase64Image } from '../../../lib/security';
@@ -20,7 +19,6 @@ async function handler(req, res) {
   }
 
   try {
-    await dbConnect();
     const userId = req.userId;
     const { image } = req.body;
 

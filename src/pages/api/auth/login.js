@@ -1,10 +1,40 @@
-import dbConnect from '../../../lib/dbConnect';
-import User from '../../../models/User';
 import bcrypt from 'bcryptjs';
 import cookie from 'cookie';
 import { signToken } from '../../../lib/auth';
 import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
+import { findUserByEmail, toUserResponse, updateUserLastActive } from '../../../lib/userStore';
+
+const FIREBASE_AUTH_API_KEY = process.env.FIREBASE_AUTH_API_KEY || process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+
+async function verifyWithFirebaseAuth(email, password) {
+  if (!FIREBASE_AUTH_API_KEY) return true;
+
+  const response = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${encodeURIComponent(FIREBASE_AUTH_API_KEY)}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        password,
+        returnSecureToken: false,
+      }),
+    }
+  );
+
+  if (response.ok) return true;
+
+  try {
+    const payload = await response.json();
+    const code = payload?.error?.message;
+    if (['INVALID_PASSWORD', 'EMAIL_NOT_FOUND', 'USER_DISABLED', 'INVALID_LOGIN_CREDENTIALS'].includes(code)) {
+      return false;
+    }
+  } catch (_) {}
+
+  return false;
+}
 
 const loginLimiter = createLimiter({
   ...RATE_LIMIT_PROFILES.authLogin,
@@ -27,8 +57,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    await dbConnect();
-
     const email = String(req.body?.email || '').trim().toLowerCase();
     const password = String(req.body?.password || '');
 
@@ -37,7 +65,7 @@ export default async function handler(req, res) {
     }
 
     // Find user
-    const user = await User.findOne({ email });
+    const user = await findUserByEmail(email);
     if (!user) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
@@ -52,35 +80,24 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
+    const isFirebaseAuthValid = await verifyWithFirebaseAuth(email, password);
+    if (!isFirebaseAuthValid) {
+      return res.status(400).json({ message: 'Invalid email or password' });
+    }
+
     let token;
     try {
-      token = signToken(user._id);
+      token = signToken(user.id || user._id);
     } catch (tokenError) {
       console.error('Login token error:', tokenError);
       return res.status(500).json({ message: 'Server authentication configuration error' });
     }
 
     // Update last active
-    user.lastActive = new Date();
-    await user.save();
+    await updateUserLastActive(user.id || user._id);
 
     // Return user data without password
-    const userData = {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      credits: user.credits,
-      bio: user.bio,
-      address: user.address,
-      avatar: user.avatar,
-      rating: user.rating,
-      favorites: user.favorites?.map((fav) => fav.toString()) || [],
-      savedSearches: (user.savedSearches || []).map((entry) => ({
-        id: entry._id?.toString(),
-        name: entry.name,
-        filters: entry.filters
-      }))
-    };
+    const userData = toUserResponse(user);
 
     // Set HttpOnly signed cookie for SSE auth (non-HTTP signed: we use JWT as value; integrity from JWT signature)
     res.setHeader('Set-Cookie', cookie.serialize('sseso', token, {

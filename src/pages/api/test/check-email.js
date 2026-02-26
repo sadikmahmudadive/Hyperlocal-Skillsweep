@@ -1,7 +1,6 @@
-import dbConnect from '../../../lib/dbConnect';
-import User from '../../../models/User';
 import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
+import { getFirestoreDb } from '../../../lib/firebaseAdmin';
 
 const limiter = createLimiter(RATE_LIMIT_PROFILES.testCheckEmail);
 
@@ -18,19 +17,17 @@ export default async function handler(req, res) {
   if (!(await enforceRateLimit(limiter, req, res))) return;
 
   try {
-    await dbConnect();
+    const db = getFirestoreDb();
 
     const email = String(req.query.email || '').trim();
     if (!email) return res.status(400).json({ message: 'email query is required' });
     const norm = email.toLowerCase();
 
-    const exact = await User.find({ email: email }).select('email');
-    const normExact = await User.find({ email: norm }).select('email');
-    const insensitive = await User.find({ email: { $regex: `^${escapeRegExp(norm)}$`, $options: 'i' } }).select('email');
-
-    // Read index information
-    const coll = (await User.db.db).collection(User.collection.name);
-    const indexes = await coll.indexes();
+    const allUsersSnap = await db.collection('users').limit(1000).get();
+    const all = allUsersSnap.docs.map((d) => d.data());
+    const exact = all.filter((u) => String(u.email || '') === email);
+    const normExact = all.filter((u) => String(u.email || '') === norm);
+    const insensitive = all.filter((u) => String(u.email || '').toLowerCase() === norm);
 
     res.status(200).json({
       query: { email, norm },
@@ -39,7 +36,7 @@ export default async function handler(req, res) {
         normExact: normExact.map(d => d.email),
         insensitive: insensitive.map(d => d.email),
       },
-      indexes
+      indexes: ['firestore:auto-indexes']
     });
   } catch (e) {
     console.error('check-email error', e);
@@ -47,6 +44,4 @@ export default async function handler(req, res) {
   }
 }
 
-function escapeRegExp(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
+

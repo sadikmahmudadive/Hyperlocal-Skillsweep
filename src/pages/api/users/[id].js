@@ -1,7 +1,6 @@
-import dbConnect from '../../../lib/dbConnect';
-import User from '../../../models/User';
 import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
+import { getUserById } from '../../../lib/firestoreStore';
 
 const limiter = createLimiter(RATE_LIMIT_PROFILES.publicUserProfile);
 
@@ -14,7 +13,6 @@ export default async function handler(req, res) {
 
   try {
     if (!(await enforceRateLimit(limiter, req, res))) return;
-    await dbConnect();
     const { id } = req.query;
 
     // Validate ID format
@@ -22,32 +20,22 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: 'Invalid user ID' });
     }
 
-    const user = await User.findById(id)
-      .select('-password -email') // Exclude sensitive information
-      .populate('reviews.reviewer', 'name avatar');
+    const user = await getUserById(id);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Calculate average rating if not already calculated
-    if (user.reviews && user.reviews.length > 0 && !user.rating?.average) {
-      const averageRating = user.reviews.reduce((sum, review) => sum + review.rating, 0) / user.reviews.length;
-      user.rating = {
-        average: Math.round(averageRating * 10) / 10, // Round to 1 decimal
-        count: user.reviews.length
-      };
-      await user.save();
-    }
+    const safeUser = {
+      ...user,
+      password: undefined,
+      email: undefined,
+    };
 
-    res.status(200).json({ user });
+    res.status(200).json({ user: safeUser });
   } catch (error) {
     console.error('Get user profile error:', error);
-    
-    if (error.name === 'CastError') {
-      return res.status(400).json({ message: 'Invalid user ID format' });
-    }
-    
+
     res.status(500).json({ message: 'Error fetching user profile' });
   }
 }

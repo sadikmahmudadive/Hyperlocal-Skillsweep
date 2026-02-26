@@ -1,7 +1,6 @@
-import dbConnect from '../../../lib/dbConnect';
-import User from '../../../models/User';
 import { requireAuthRateLimited } from '../../../middleware/auth';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
+import { findUserById, toUserResponse, updateUserProfileById } from '../../../lib/userStore';
 
 async function handler(req, res) {
   if (req.method !== 'PUT') {
@@ -9,7 +8,6 @@ async function handler(req, res) {
   }
 
   try {
-    await dbConnect();
     const userId = req.userId;
     const updateData = req.body;
 
@@ -56,8 +54,8 @@ async function handler(req, res) {
         notifications: safeUpdateData.preferences.notifications || { email: true, push: true }
       };
     } else {
-      const existingUser = await User.findById(userId);
-      safeUpdateData.preferences = existingUser.preferences;
+      const existingUser = await findUserById(userId);
+      safeUpdateData.preferences = existingUser?.preferences;
     }
 
     // Validate inputs
@@ -73,15 +71,7 @@ async function handler(req, res) {
       safeUpdateData.preferences.maxDistance = maxDistance;
     }
 
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { $set: safeUpdateData },
-      { 
-        new: true, 
-        runValidators: true,
-        context: 'query'
-      }
-    ).select('-password');
+    const user = await updateUserProfileById(userId, safeUpdateData);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -89,7 +79,7 @@ async function handler(req, res) {
 
     res.status(200).json({
       message: 'Profile updated successfully',
-      user
+      user: toUserResponse(user)
     });
   } catch (error) {
     console.error('Profile update error:', error);

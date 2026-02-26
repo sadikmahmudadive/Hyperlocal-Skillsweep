@@ -1,10 +1,8 @@
-import dbConnect from '../../../../lib/dbConnect';
 import payments from '../../../../lib/payments';
-import TopUpIntent from '../../../../models/TopUpIntent';
-import User from '../../../../models/User';
 import { getStripeClient } from '../../../../lib/payments/stripe';
 import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../../lib/security';
 import { RATE_LIMIT_PROFILES } from '../../../../lib/rateLimitProfiles';
+import { findTopUpIntentById, getUserById, patchTopUpIntent, patchUser } from '../../../../lib/firestoreStore';
 
 export const config = {
   api: {
@@ -66,8 +64,6 @@ async function handler(req, res) {
   }
 
   try {
-    await dbConnect();
-
     if (event.type === 'checkout.session.completed') {
       await handleCheckoutSessionCompleted(event.data.object);
     }
@@ -83,7 +79,7 @@ async function handleCheckoutSessionCompleted(session) {
   const intentId = session?.metadata?.intentId;
   if (!intentId) return;
 
-  const intent = await TopUpIntent.findById(intentId);
+  const intent = await findTopUpIntentById(intentId);
   if (!intent) return;
 
   if (intent.status === 'confirmed') {
@@ -92,30 +88,39 @@ async function handleCheckoutSessionCompleted(session) {
 
   const paid = session.payment_status === 'paid' || session.status === 'complete';
   if (!paid) {
-    intent.status = 'failed';
-    intent.metadata = { ...(intent.metadata || {}), lastEvent: session }; // store for debugging
-    await intent.save();
+    await patchTopUpIntent(intentId, {
+      status: 'failed',
+      metadata: { ...(intent.metadata || {}), lastEvent: session }
+    });
     return;
   }
 
-  intent.status = 'confirmed';
-  intent.confirmedAt = new Date();
-  intent.externalRef = session.payment_intent || session.id;
-  intent.stripeSessionId = session.id;
-  intent.stripePaymentIntentId = typeof session.payment_intent === 'string' ? session.payment_intent : intent.stripePaymentIntentId;
-  intent.metadata = { ...(intent.metadata || {}), checkoutSession: session };
-  await intent.save();
+  await patchTopUpIntent(intentId, {
+    status: 'confirmed',
+    confirmedAt: new Date().toISOString(),
+    externalRef: session.payment_intent || session.id,
+    stripeSessionId: session.id,
+    stripePaymentIntentId: typeof session.payment_intent === 'string' ? session.payment_intent : intent.stripePaymentIntentId,
+    metadata: { ...(intent.metadata || {}), checkoutSession: session }
+  });
 
-  const user = await User.findById(intent.user);
+  const user = await getUserById(intent.user);
   if (!user) return;
 
-  await payments.recordLedgerEntry(
-    user,
-    'topup',
-    intent.credits,
-    'Top up via Stripe',
-    intent.stripePaymentIntentId || intent.externalRef,
-  );
+  const nextBalance = (user.credits || 0) + Number(intent.credits || 0);
+  await patchUser(intent.user, {
+    credits: nextBalance,
+    ledger: [
+      ...(user.ledger || []),
+      {
+        type: 'topup',
+        amount: intent.credits,
+        balanceAfter: nextBalance,
+        txRef: intent.stripePaymentIntentId || intent.externalRef,
+        note: 'Top up via Stripe'
+      }
+    ]
+  });
 }
 
 export default handler;

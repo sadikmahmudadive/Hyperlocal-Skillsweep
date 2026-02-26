@@ -1,8 +1,6 @@
-import dbConnect from '../../../lib/dbConnect';
-import Review from '../../../models/Review';
-import mongoose from 'mongoose';
 import { requireAuthRateLimited } from '../../../middleware/auth';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
+import { getUsersByIds, listReviews } from '../../../lib/firestoreStore';
 
 async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -10,7 +8,6 @@ async function handler(req, res) {
   }
 
   try {
-    await dbConnect();
     const { userId, page = '1', limit = '10', authored } = req.query;
 
     const authoredMode = String(authored) === 'true';
@@ -18,31 +15,24 @@ async function handler(req, res) {
       if (!userId) {
         return res.status(400).json({ message: 'User ID is required' });
       }
-      if (!mongoose.Types.ObjectId.isValid(userId)) {
-        return res.status(400).json({ message: 'Invalid user ID' });
-      }
     }
-    const pageNum = Math.max(parseInt(page, 10) || 1, 1);
-    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 50);
-    const skip = (pageNum - 1) * limitNum;
-
-    const query = authoredMode ? { reviewer: req.userId } : { targetUser: userId };
-    const [reviews, total] = await Promise.all([
-      Review.find(query)
-      .populate('reviewer', 'name avatar')
-      .populate('transaction')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limitNum),
-      Review.countDocuments(query)
-    ]);
+    const payload = await listReviews({
+      targetUserId: authoredMode ? null : userId,
+      reviewerId: authoredMode ? req.userId : null,
+      page,
+      limit,
+    });
+    const reviewerIds = Array.from(new Set((payload.reviews || []).map((r) => String(r.reviewer))));
+    const reviewers = await getUsersByIds(reviewerIds);
+    const reviewerMap = new Map(reviewers.map((r) => [String(r.id || r._id), { _id: r.id || r._id, name: r.name, avatar: r.avatar }]));
+    const reviews = (payload.reviews || []).map((r) => ({ ...r, reviewer: reviewerMap.get(String(r.reviewer)) || { _id: r.reviewer } }));
 
     res.status(200).json({
       reviews,
-      page: pageNum,
-      total,
-      pageSize: limitNum,
-      totalPages: Math.ceil(total / limitNum) || 1
+      page: payload.page,
+      total: payload.total,
+      pageSize: payload.pageSize,
+      totalPages: payload.totalPages
     });
   } catch (error) {
     console.error('Get reviews error:', error);

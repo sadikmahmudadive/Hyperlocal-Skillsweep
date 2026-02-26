@@ -1,10 +1,6 @@
-import dbConnect from '../../../lib/dbConnect';
-import Review from '../../../models/Review';
-import User from '../../../models/User';
-import Transaction from '../../../models/Transaction';
-import mongoose from 'mongoose';
 import { requireAuthRateLimited } from '../../../middleware/auth';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
+import { createReview, findReviewByUnique, getTransactionById, getUserById, patchUser, reviewStats } from '../../../lib/firestoreStore';
 
 async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -12,7 +8,6 @@ async function handler(req, res) {
   }
 
   try {
-    await dbConnect();
     const userId = req.userId;
     const { targetUserId, rating, comment, transactionId } = req.body || {};
 
@@ -22,10 +17,10 @@ async function handler(req, res) {
     }
 
     // Basic payload validation
-    if (!transactionId || !mongoose.Types.ObjectId.isValid(transactionId)) {
+    if (!transactionId) {
       return res.status(400).json({ message: 'A valid transactionId is required' });
     }
-    if (!targetUserId || !mongoose.Types.ObjectId.isValid(targetUserId)) {
+    if (!targetUserId) {
       return res.status(400).json({ message: 'A valid targetUserId is required' });
     }
     const parsedRating = Number(rating);
@@ -34,16 +29,16 @@ async function handler(req, res) {
     }
 
     // Ensure the transaction exists and the requester participated
-    const tx = await Transaction.findById(transactionId).populate('provider receiver', 'name');
+    const tx = await getTransactionById(transactionId);
     if (!tx) {
       return res.status(404).json({ message: 'Transaction not found' });
     }
-    const isParticipant = [String(tx.provider._id), String(tx.receiver._id)].includes(String(userId));
+    const isParticipant = [String(tx.provider), String(tx.receiver)].includes(String(userId));
     if (!isParticipant) {
       return res.status(403).json({ message: 'You are not a participant in this transaction' });
     }
     // Only allow reviewing the other participant
-    const otherPartyId = String(tx.provider._id) === String(userId) ? String(tx.receiver._id) : String(tx.provider._id);
+    const otherPartyId = String(tx.provider) === String(userId) ? String(tx.receiver) : String(tx.provider);
     if (String(targetUserId) !== otherPartyId) {
       return res.status(400).json({ message: 'Invalid target user for this transaction' });
     }
@@ -53,7 +48,7 @@ async function handler(req, res) {
     }
 
     // Check if review already exists for this transaction
-    const existingReview = await Review.findOne({
+    const existingReview = await findReviewByUnique({
       reviewer: userId,
       targetUser: targetUserId,
       transaction: transactionId
@@ -64,7 +59,7 @@ async function handler(req, res) {
     }
 
     // Create review
-    const review = new Review({
+    const review = await createReview({
       reviewer: userId,
       targetUser: targetUserId,
       rating: parsedRating,
@@ -72,23 +67,18 @@ async function handler(req, res) {
       transaction: transactionId
     });
 
-    await review.save();
+    const stat = await reviewStats(targetUserId);
+    await patchUser(targetUserId, { rating: { average: stat.average, count: stat.count } });
 
-    // Update target user's average rating (aggregation)
-    const [stat] = await Review.aggregate([
-      { $match: { targetUser: new mongoose.Types.ObjectId(targetUserId) } },
-      { $group: { _id: null, avg: { $avg: '$rating' }, count: { $sum: 1 } } }
-    ]);
-    const avg = stat?.avg ? Math.round(stat.avg * 10) / 10 : 0;
-    const count = stat?.count || 0;
-    await User.findByIdAndUpdate(targetUserId, { $set: { 'rating.average': avg, 'rating.count': count } });
-
-    // Populate reviewer info for response
-    await review.populate('reviewer', 'name avatar');
+    const reviewer = await getUserById(userId);
+    const reviewPayload = {
+      ...review,
+      reviewer: reviewer ? { _id: reviewer.id || reviewer._id, name: reviewer.name, avatar: reviewer.avatar } : { _id: userId }
+    };
 
     res.status(201).json({
       message: 'Review submitted successfully',
-      review
+      review: reviewPayload
     });
   } catch (error) {
     console.error('Create review error:', error);

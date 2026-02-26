@@ -1,9 +1,8 @@
-import dbConnect from '../../../lib/dbConnect';
-import User from '../../../models/User';
 import jwt from 'jsonwebtoken';
 import sgMail from '@sendgrid/mail';
 import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
+import { getUserByEmail } from '../../../lib/firestoreStore';
 
 const requestResetLimiter = createLimiter({
   ...RATE_LIMIT_PROFILES.authRequestReset,
@@ -22,11 +21,10 @@ export default async function handler(req, res) {
     return;
   }
   try {
-    await dbConnect();
     const { email } = req.body || {};
     if (!email) return res.status(400).json({ message: 'Email is required' });
     const norm = String(email).trim().toLowerCase();
-    const user = await User.findOne({ email: norm });
+    const user = await getUserByEmail(norm);
     // Always return success to avoid revealing account existence
     if (!user) {
       return res.status(200).json({ message: 'If an account exists, you will receive reset instructions shortly.' });
@@ -36,7 +34,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ message: 'Server misconfiguration' });
     }
     // Create a short-lived token (1 hour)
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ userId: user.id || user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
     const base = process.env.NEXT_PUBLIC_BASE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
   const resetLink = `${base.replace(/\/$/, '')}/auth/reset?token=${encodeURIComponent(token)}`;
 

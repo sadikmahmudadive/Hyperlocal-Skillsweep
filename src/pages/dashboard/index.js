@@ -84,9 +84,11 @@ export default function Dashboard() {
   // Keep URL in sync with current filter (shallow)
   useEffect(() => {
     if (!router.isReady) return;
+    const currentFilter = typeof router.query.filter === 'string' ? router.query.filter : 'all';
+    if (currentFilter === activityFilter) return;
     const nextQuery = { ...router.query, filter: activityFilter };
-    router.push({ pathname: router.pathname, query: nextQuery }, undefined, { shallow: true });
-  }, [activityFilter]);
+    router.replace({ pathname: router.pathname, query: nextQuery }, undefined, { shallow: true });
+  }, [activityFilter, router.isReady, router.pathname, router.query, router.replace]);
 
   const updateStats = () => {
     setStats({
@@ -131,7 +133,14 @@ export default function Dashboard() {
 
   const fetchReviewsSummary = async () => {
     try {
-      const res = await fetch(`/api/reviews?userId=${user.id}`);
+      const token = localStorage.getItem('token');
+      const currentUserId = user?.id || user?._id;
+      if (!currentUserId || !token) return;
+      const res = await fetch(`/api/reviews?userId=${currentUserId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (!res.ok) return;
       const data = await res.json();
       const last = data.reviews?.[0] || null;
@@ -153,7 +162,9 @@ export default function Dashboard() {
   };
 
   const formatTransactionType = (transaction, currentUserId) => {
-    if (transaction.provider._id === currentUserId) {
+    const providerId = String(transaction?.provider?._id || transaction?.provider?.id || transaction?.provider || '');
+    const me = String(currentUserId || '');
+    if (providerId === me) {
       return `You provided ${transaction.skill?.name || 'a service'}`;
     } else {
       return `You received ${transaction.skill?.name || 'a service'}`;
@@ -161,7 +172,9 @@ export default function Dashboard() {
   };
 
   const getOtherUser = (transaction, currentUserId) => {
-    return transaction.provider._id === currentUserId 
+    const providerId = String(transaction?.provider?._id || transaction?.provider?.id || transaction?.provider || '');
+    const me = String(currentUserId || '');
+    return providerId === me 
       ? transaction.receiver 
       : transaction.provider;
   };

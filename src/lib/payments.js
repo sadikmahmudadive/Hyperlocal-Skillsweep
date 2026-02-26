@@ -1,5 +1,4 @@
 import paymentConfig, { creditsToFiat, fiatToCredits } from '../../config/payments';
-import mongoose from 'mongoose';
 
 export function validateTopUp(credits) {
   if (typeof credits !== 'number' || !Number.isFinite(credits)) return 'Invalid credits';

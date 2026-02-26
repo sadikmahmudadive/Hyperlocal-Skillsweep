@@ -1,17 +1,15 @@
-import dbConnect from '../../../lib/dbConnect';
-import Transaction from '../../../models/Transaction';
 import { requireAuthRateLimited } from '../../../middleware/auth';
 import { anchorTransactionProof } from '../../../lib/blockchain';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
+import { getTransactionById } from '../../../lib/firestoreStore';
 
 async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
   try {
-    await dbConnect();
     const { transactionId } = req.body;
     if (!transactionId) return res.status(400).json({ message: 'transactionId required' });
 
-    const tx = await Transaction.findById(transactionId);
+    const tx = await getTransactionById(transactionId);
     if (!tx) return res.status(404).json({ message: 'Transaction not found' });
 
     // Call helper

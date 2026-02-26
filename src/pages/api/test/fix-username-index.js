@@ -1,7 +1,6 @@
-import dbConnect from '../../../lib/dbConnect';
-import User from '../../../models/User';
 import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
+import { getFirestoreDb } from '../../../lib/firebaseAdmin';
 
 const limiter = createLimiter(RATE_LIMIT_PROFILES.testFixUsernameIndex);
 
@@ -19,33 +18,14 @@ export default async function handler(req, res) {
   if (!(await enforceRateLimit(limiter, req, res))) return;
 
   try {
-    await dbConnect();
-
-    const coll = (await User.db.db).collection(User.collection.name);
-    const before = await coll.indexes();
-
-    const usernameIndex = before.find(ix => (ix.key && ix.key.username === 1) || ix.name === 'username_1');
-    let action = 'none';
-    let dropped = null;
-
-    if (usernameIndex) {
-      try {
-        await coll.dropIndex(usernameIndex.name || 'username_1');
-        action = 'dropped';
-        dropped = usernameIndex.name || 'username_1';
-      } catch (e) {
-        action = 'drop-failed';
-        console.error('Failed to drop username index', e);
-      }
-    }
-
-    const after = await coll.indexes();
+    const db = getFirestoreDb();
+    await db.collection('users').limit(1).get();
     return res.status(200).json({
-      message: 'Checked users indexes',
-      action,
-      dropped,
-      before,
-      after
+      message: 'Firestore mode: Mongo username index fix is not applicable',
+      action: 'noop',
+      dropped: null,
+      before: ['firestore:auto-indexes'],
+      after: ['firestore:auto-indexes']
     });
   } catch (e) {
     console.error('fix-username-index error', e);

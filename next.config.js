@@ -3,7 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   images: {
-    domains: ['res.cloudinary.com', 'images.unsplash.com'],
+    domains: ['res.cloudinary.com', 'images.unsplash.com', 'ui-avatars.com'],
   },
   // Temporarily ignore ESLint errors during build to avoid failing production
   // builds while we incrementally fix react-hooks/exhaustive-deps and other
@@ -21,10 +21,10 @@ const nextConfig = {
       "base-uri 'self'",
       "object-src 'none'",
       "form-action 'self'",
-      "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://api.mapbox.com https://*.tiles.mapbox.com https://*.stripe.com",
+      "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://ui-avatars.com https://api.mapbox.com https://*.tiles.mapbox.com https://*.stripe.com",
       "style-src 'self' 'unsafe-inline' https://api.mapbox.com https://fonts.googleapis.com https://api.fontshare.com https://*.fontshare.com",
-      `script-src 'self' 'unsafe-inline' https://api.mapbox.com https://js.stripe.com https://vercel.live https://*.vercel.live${isDev ? " 'unsafe-eval'" : ''}`,
-      "connect-src 'self' https://api.mapbox.com https://events.mapbox.com https://api.stripe.com https://*.stripe.com",
+      `script-src 'self' 'unsafe-inline' https://api.mapbox.com https://js.stripe.com https://vercel.live https://*.vercel.live https://va.vercel-scripts.com${isDev ? " 'unsafe-eval'" : ''}`,
+      "connect-src 'self' https://api.mapbox.com https://events.mapbox.com https://api.stripe.com https://*.stripe.com https://va.vercel-scripts.com",
       "font-src 'self' data: https://api.mapbox.com https://fonts.gstatic.com https://api.fontshare.com https://*.fontshare.com",
       "worker-src 'self' blob:",
       "child-src 'self' blob:",

@@ -1,8 +1,7 @@
-import dbConnect from '../../../lib/dbConnect';
-import Conversation from '../../../models/Conversation';
 import { requireAuthRateLimited } from '../../../middleware/auth';
 import { notifyUsers } from '../../../lib/sse';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
+import { getConversationById, patchConversation } from '../../../lib/firestoreStore';
 
 async function handler(req, res) {
   if (req.method !== 'PATCH' && req.method !== 'POST') {
@@ -10,7 +9,6 @@ async function handler(req, res) {
   }
 
   try {
-    await dbConnect();
     const userId = req.userId;
     const { conversationId } = req.body;
 
@@ -18,34 +16,30 @@ async function handler(req, res) {
       return res.status(400).json({ message: 'conversationId is required' });
     }
 
-    const conversation = await Conversation.findOne({ _id: conversationId, participants: userId });
-    if (!conversation) {
+    const conversation = await getConversationById(conversationId);
+    if (!conversation || !(conversation.participants || []).map(String).includes(String(userId))) {
       return res.status(404).json({ message: 'Conversation not found' });
     }
 
     let updated = false;
-    conversation.messages.forEach((m) => {
+    const nextMessages = (conversation.messages || []).map((m) => {
       if (!m.read && String(m.sender) !== String(userId)) {
-        m.read = true;
         updated = true;
+        return { ...m, read: true };
       }
+      return m;
     });
 
     if (updated) {
-      // Ensure lastMessage reflects updated read state when applicable
-      if (
-        conversation.lastMessage &&
-        !conversation.lastMessage.read &&
-        String(conversation.lastMessage.sender) !== String(userId)
-      ) {
-        conversation.lastMessage.read = true;
-      }
-      await conversation.save();
+      const lastMessage = conversation.lastMessage && !conversation.lastMessage.read && String(conversation.lastMessage.sender) !== String(userId)
+        ? { ...conversation.lastMessage, read: true }
+        : conversation.lastMessage;
+      await patchConversation(conversationId, { messages: nextMessages, lastMessage });
     }
 
     if (updated) {
       try {
-        notifyUsers(conversation.participants.map((p) => String(p)), 'read', {
+        notifyUsers((conversation.participants || []).map((p) => String(p)), 'read', {
           conversationId,
           readerId: String(userId),
           at: Date.now(),

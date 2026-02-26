@@ -82,7 +82,8 @@ Reviews contribute to the rating shown on match cards.
 ### Prerequisites
 
 - Node.js 18+
-- A MongoDB connection string
+- A MongoDB connection string (if using Mongo)
+- A Firebase service account (if using Firestore)
 - Cloudinary account (for uploads) — optional but recommended
 - Mapbox token (for maps) — optional
 - Stripe (for top-up/payments) — optional
@@ -99,8 +100,22 @@ Add these variables:
 
 Required:
 
-- `MONGODB_URI` — MongoDB connection string
+- `DB_PROVIDER` — `mongo` (default) or `firestore`
 - `JWT_SECRET` — JWT signing secret
+
+If `DB_PROVIDER=mongo`:
+
+- `MONGODB_URI` — MongoDB connection string
+
+If `DB_PROVIDER=firestore`:
+
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY` (keep `\n` escapes in `.env.local`)
+
+Optional (Firebase Authentication login verification):
+
+- `FIREBASE_AUTH_API_KEY` (or `NEXT_PUBLIC_FIREBASE_API_KEY`)
 
 Recommended (JWT hardening):
 

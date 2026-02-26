@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useEffect } from 'react';
+import { createContext, useContext, useReducer, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 
 const AuthContext = createContext();
@@ -577,13 +577,22 @@ export const withAuth = (Component) => {
 export const useRequireAuth = (redirectPath = '/auth/login') => {
   const { isAuthenticated, loading, setRedirectPath } = useAuth();
   const router = useRouter();
+  const redirectingRef = useRef(false);
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      setRedirectPath(router.asPath);
-      router.push(redirectPath);
+    if (loading) return;
+
+    if (isAuthenticated) {
+      redirectingRef.current = false;
+      return;
     }
-  }, [isAuthenticated, loading, router, redirectPath, setRedirectPath]);
+
+    if (!redirectingRef.current && router.pathname !== redirectPath) {
+      redirectingRef.current = true;
+      setRedirectPath(router.asPath);
+      router.replace(redirectPath);
+    }
+  }, [isAuthenticated, loading, redirectPath, router.asPath, router.pathname, router.replace, setRedirectPath]);
 
   return { isAuthenticated, loading };
 };

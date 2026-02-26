@@ -1,7 +1,6 @@
-import dbConnect from '../../../lib/dbConnect';
-import Transaction from '../../../models/Transaction';
 import { requireAuthRateLimited } from '../../../middleware/auth';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
+import { getTransactionById, patchTransaction } from '../../../lib/firestoreStore';
 
 async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -9,7 +8,6 @@ async function handler(req, res) {
   }
 
   try {
-    await dbConnect();
     const userId = req.userId;
     const { transactionId } = req.body;
 
@@ -18,13 +16,9 @@ async function handler(req, res) {
     }
 
     // Either party can start the service when status is confirmed and escrow is held
-    const transaction = await Transaction.findOne({
-      _id: transactionId,
-      $or: [{ provider: userId }, { receiver: userId }],
-      status: 'confirmed'
-    });
+    const transaction = await getTransactionById(transactionId);
 
-    if (!transaction) {
+    if (!transaction || ![String(transaction.provider), String(transaction.receiver)].includes(String(userId)) || transaction.status !== 'confirmed') {
       return res.status(404).json({ message: 'Transaction not found or not in confirmed state' });
     }
 
@@ -33,12 +27,12 @@ async function handler(req, res) {
       return res.status(400).json({ message: 'Escrow not present; cannot start transaction' });
     }
 
-    transaction.status = 'in-progress';
-    transaction.audit = transaction.audit || [];
-    transaction.audit.push({ actor: userId, action: 'start', note: 'Service started', ts: new Date() });
-    await transaction.save();
+    const updated = await patchTransaction(transactionId, {
+      status: 'in-progress',
+      audit: [...(transaction.audit || []), { actor: userId, action: 'start', note: 'Service started', ts: new Date().toISOString() }]
+    });
 
-    res.status(200).json({ message: 'Transaction started', transaction });
+    res.status(200).json({ message: 'Transaction started', transaction: updated });
   } catch (error) {
     console.error('Start transaction error:', error);
     res.status(500).json({ message: 'Error starting transaction' });

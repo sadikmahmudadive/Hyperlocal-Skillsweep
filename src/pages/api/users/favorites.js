@@ -1,9 +1,7 @@
-import dbConnect from '../../../lib/dbConnect';
-import User from '../../../models/User';
-import mongoose from 'mongoose';
 import { getTokenFromRequest, verifyToken } from '../../../lib/auth';
 import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
+import { getUserById, getUsersByIds, patchUser } from '../../../lib/firestoreStore';
 
 const basicUserProjection = 'name avatar rating skillsOffered credits location bio';
 const writeLimiter = createLimiter({
@@ -31,28 +29,25 @@ export default async function handler(req, res) {
   }
 
   try {
-    await dbConnect();
-    const currentUser = await User.findById(decoded.userId);
+    const currentUser = await getUserById(decoded.userId);
     if (!currentUser) {
       return res.status(404).json({ message: 'User not found' });
     }
 
     if (req.method === 'GET') {
-      const favorites = await User.find({ _id: { $in: currentUser.favorites || [] } })
-        .select(basicUserProjection)
-        .lean();
+      const favorites = await getUsersByIds(currentUser.favorites || []);
 
       return res.status(200).json({
-        ids: (currentUser.favorites || []).map((id) => id.toString()),
+        ids: (currentUser.favorites || []).map((id) => String(id)),
         favorites: favorites.map((fav) => ({
           ...fav,
-          id: fav._id.toString()
+          id: String(fav.id || fav._id)
         }))
       });
     }
 
     const { providerId } = req.body || {};
-    if (!providerId || !mongoose.Types.ObjectId.isValid(providerId)) {
+    if (!providerId) {
       return res.status(400).json({ message: 'Valid providerId is required' });
     }
 
@@ -60,7 +55,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: 'You cannot favorite yourself' });
     }
 
-    const provider = await User.findById(providerId).select(basicUserProjection).lean();
+    const provider = await getUserById(providerId);
     if (!provider) {
       return res.status(404).json({ message: 'Provider not found' });
     }
@@ -70,14 +65,14 @@ export default async function handler(req, res) {
         return;
       }
       currentUser.favorites = currentUser.favorites || [];
-      if (!currentUser.favorites.some((favId) => favId.toString() === providerId)) {
-        currentUser.favorites.push(new mongoose.Types.ObjectId(providerId));
-        await currentUser.save();
+      if (!currentUser.favorites.some((favId) => String(favId) === String(providerId))) {
+        currentUser.favorites.push(String(providerId));
+        await patchUser(decoded.userId, { favorites: currentUser.favorites });
       }
 
       return res.status(200).json({
-        ids: currentUser.favorites.map((id) => id.toString()),
-        favorite: { ...provider, id: provider._id.toString() }
+        ids: currentUser.favorites.map((id) => String(id)),
+        favorite: { ...provider, id: String(provider.id || provider._id) }
       });
     }
 
@@ -86,11 +81,11 @@ export default async function handler(req, res) {
         return;
       }
       const before = (currentUser.favorites || []).length;
-      currentUser.favorites = (currentUser.favorites || []).filter((favId) => favId.toString() !== providerId);
+      currentUser.favorites = (currentUser.favorites || []).filter((favId) => String(favId) !== String(providerId));
       if (currentUser.favorites.length !== before) {
-        await currentUser.save();
+        await patchUser(decoded.userId, { favorites: currentUser.favorites });
       }
-      return res.status(200).json({ ids: currentUser.favorites.map((id) => id.toString()) });
+      return res.status(200).json({ ids: currentUser.favorites.map((id) => String(id)) });
     }
 
     return res.status(405).json({ message: 'Method not allowed' });

@@ -1,9 +1,7 @@
-import dbConnect from '../../../lib/dbConnect';
-import User from '../../../models/User';
-import mongoose from 'mongoose';
 import { getTokenFromRequest, verifyToken } from '../../../lib/auth';
 import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
+import { getUserById, patchUser } from '../../../lib/firestoreStore';
 
 const ALLOWED_FILTER_KEYS = ['query', 'category', 'distance', 'sort', 'withinRadius', 'autoFit'];
 const writeLimiter = createLimiter({
@@ -39,14 +37,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    await dbConnect();
-    const user = await User.findById(decoded.userId);
+    const user = await getUserById(decoded.userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
     const toResponse = () => (user.savedSearches || []).map((entry) => ({
-      id: entry._id.toString(),
+      id: entry.id || entry._id,
       name: entry.name,
       filters: entry.filters,
       createdAt: entry.createdAt,
@@ -74,8 +71,14 @@ export default async function handler(req, res) {
       if (user.savedSearches.length >= 20) {
         return res.status(400).json({ message: 'You reached the limit of saved searches (20)' });
       }
-      user.savedSearches.push({ name: trimmedName, filters: sanitized });
-      await user.save();
+      user.savedSearches.push({
+        id: `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+        name: trimmedName,
+        filters: sanitized,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      await patchUser(decoded.userId, { savedSearches: user.savedSearches });
       return res.status(201).json({ savedSearches: toResponse() });
     }
 
@@ -84,10 +87,11 @@ export default async function handler(req, res) {
         return;
       }
       const { id, name, filters } = req.body || {};
-      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      if (!id) {
         return res.status(400).json({ message: 'Valid id is required' });
       }
-      const entry = user.savedSearches?.id(id);
+      const index = (user.savedSearches || []).findIndex((entry) => String(entry.id || entry._id) === String(id));
+      const entry = index >= 0 ? user.savedSearches[index] : null;
       if (!entry) {
         return res.status(404).json({ message: 'Saved search not found' });
       }
@@ -104,7 +108,9 @@ export default async function handler(req, res) {
       if (filters && typeof filters === 'object') {
         entry.filters = sanitizeFilters(filters);
       }
-      await user.save();
+      entry.updatedAt = new Date().toISOString();
+      user.savedSearches[index] = entry;
+      await patchUser(decoded.userId, { savedSearches: user.savedSearches });
       return res.status(200).json({ savedSearches: toResponse() });
     }
 
@@ -113,15 +119,15 @@ export default async function handler(req, res) {
         return;
       }
       const { id } = req.body || {};
-      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      if (!id) {
         return res.status(400).json({ message: 'Valid id is required' });
       }
       const before = user.savedSearches?.length || 0;
-      user.savedSearches = (user.savedSearches || []).filter((entry) => entry._id.toString() !== id);
+      user.savedSearches = (user.savedSearches || []).filter((entry) => String(entry.id || entry._id) !== String(id));
       if ((user.savedSearches?.length || 0) === before) {
         return res.status(404).json({ message: 'Saved search not found' });
       }
-      await user.save();
+      await patchUser(decoded.userId, { savedSearches: user.savedSearches });
       return res.status(200).json({ savedSearches: toResponse() });
     }
 

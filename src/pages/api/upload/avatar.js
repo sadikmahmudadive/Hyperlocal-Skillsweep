@@ -1,9 +1,8 @@
-import dbConnect from '../../../lib/dbConnect';
-import User from '../../../models/User';
 import cloudinary from '../../../lib/cloudinary';
 import { requireAuthRateLimited } from '../../../middleware/auth';
 import { applyApiSecurityHeaders, parseBase64Image } from '../../../lib/security';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
+import { getUserById, patchUser } from '../../../lib/firestoreStore';
 
 export const config = {
   api: {
@@ -21,7 +20,6 @@ async function handler(req, res) {
   }
 
   try {
-    await dbConnect();
     const userId = req.userId;
     const { image, name } = req.body;
 
@@ -52,17 +50,18 @@ async function handler(req, res) {
       );
     });
 
-    // Update user in database
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { 
-        avatar: {
-          url: uploadResult.secure_url,
-          public_id: uploadResult.public_id
-        }
-      },
-      { new: true }
-    ).select('-password');
+    const existingUser = await getUserById(userId);
+    if (!existingUser) {
+      await cloudinary.uploader.destroy(uploadResult.public_id);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const user = await patchUser(userId, {
+      avatar: {
+        url: uploadResult.secure_url,
+        public_id: uploadResult.public_id
+      }
+    });
 
     if (!user) {
       // Rollback: delete the uploaded image if user update fails

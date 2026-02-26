@@ -1,13 +1,10 @@
-import dbConnect from '../../../lib/dbConnect';
-import Review from '../../../models/Review';
-import User from '../../../models/User';
-import mongoose from 'mongoose';
 import { requireAuthRateLimited } from '../../../middleware/auth';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
+import { deleteReview, findReviewById, patchReview, patchUser, reviewStats } from '../../../lib/firestoreStore';
 
 async function handler(req, res) {
   const { id } = req.query;
-  if (!mongoose.Types.ObjectId.isValid(id)) {
+  if (!id) {
     return res.status(400).json({ message: 'Invalid review id' });
   }
   if (!['PUT','DELETE'].includes(req.method)) {
@@ -15,9 +12,8 @@ async function handler(req, res) {
   }
 
   try {
-    await dbConnect();
     const userId = req.userId;
-    const review = await Review.findById(id);
+    const review = await findReviewById(id);
     if (!review) return res.status(404).json({ message: 'Review not found' });
     if (String(review.reviewer) !== String(userId)) {
       return res.status(403).json({ message: 'You can only modify your own review' });
@@ -38,22 +34,17 @@ async function handler(req, res) {
       }
       review.rating = parsed;
       review.comment = comment || '';
-      await review.save();
+      await patchReview(id, { rating: parsed, comment: comment || '' });
     }
 
     if (req.method === 'DELETE') {
-      await review.deleteOne();
+      await deleteReview(id);
     }
 
     // Recompute target user's rating
     const targetUserId = review.targetUser;
-    const [stat] = await Review.aggregate([
-      { $match: { targetUser: new mongoose.Types.ObjectId(targetUserId) } },
-      { $group: { _id: null, avg: { $avg: '$rating' }, count: { $sum: 1 } } }
-    ]);
-    const avg = stat?.avg ? Math.round(stat.avg * 10) / 10 : 0;
-    const count = stat?.count || 0;
-    await User.findByIdAndUpdate(targetUserId, { $set: { 'rating.average': avg, 'rating.count': count } });
+    const stat = await reviewStats(targetUserId);
+    await patchUser(targetUserId, { rating: { average: stat.average, count: stat.count } });
 
     return res.status(200).json({ message: req.method === 'DELETE' ? 'Review deleted' : 'Review updated' });
   } catch (error) {
