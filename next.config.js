@@ -28,7 +28,7 @@ const nextConfig = {
       "font-src 'self' data: https://api.mapbox.com",
       "worker-src 'self' blob:",
       "child-src 'self' blob:",
-      "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+      "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://vercel.live https://*.vercel.live",
       "frame-ancestors 'none'",
       "manifest-src 'self'",
       ...(isDev ? [] : ["upgrade-insecure-requests"]),

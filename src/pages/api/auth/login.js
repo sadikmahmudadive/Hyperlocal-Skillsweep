@@ -29,11 +29,20 @@ export default async function handler(req, res) {
   try {
     await dbConnect();
 
-    const { email, password } = req.body;
+    const email = String(req.body?.email || '').trim().toLowerCase();
+    const password = String(req.body?.password || '');
+
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
 
     // Find user
     const user = await User.findOne({ email });
     if (!user) {
+      return res.status(400).json({ message: 'Invalid email or password' });
+    }
+
+    if (!user.password) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
@@ -43,7 +52,13 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-    const token = signToken(user._id);
+    let token;
+    try {
+      token = signToken(user._id);
+    } catch (tokenError) {
+      console.error('Login token error:', tokenError);
+      return res.status(500).json({ message: 'Server authentication configuration error' });
+    }
 
     // Update last active
     user.lastActive = new Date();
