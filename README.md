@@ -102,6 +102,11 @@ Required:
 - `MONGODB_URI` — MongoDB connection string
 - `JWT_SECRET` — JWT signing secret
 
+Recommended (JWT hardening):
+
+- `JWT_ISSUER` — expected JWT issuer claim
+- `JWT_AUDIENCE` — expected JWT audience claim
+
 Recommended (uploads):
 
 - `CLOUDINARY_CLOUD_NAME`
@@ -175,4 +180,9 @@ Runtime notes
 
 - A `vercel.json` file pins `/api/events/stream` to the Node.js runtime with an increased timeout so SSE connections stay open.
 - If you see frequent SSE disconnects, switch to a managed realtime provider or a polling fallback.
+
+Security notes
+
+- Most mutable API routes now include in-memory rate limits and stricter API security headers.
+- Test/debug endpoints under `/api/test/*` are intended for development and return `404` in production.
 

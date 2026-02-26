@@ -1,13 +1,20 @@
 import dbConnect from '../../../lib/dbConnect';
 import User from '../../../models/User';
+import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
+
+const limiter = createLimiter({ limit: 10, windowMs: 60_000 });
 
 export default async function handler(req, res) {
+  applyApiSecurityHeaders(res);
+
   if (process.env.NODE_ENV === 'production') {
     return res.status(404).json({ message: 'Not found' });
   }
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
+
+  if (!(await enforceRateLimit(limiter, req, res))) return;
 
   try {
     await dbConnect();

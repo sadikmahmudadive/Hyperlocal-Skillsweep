@@ -1,18 +1,18 @@
 import dbConnect from '../../../lib/dbConnect';
 import User from '../../../models/User';
-import { rateLimit } from '../../../lib/rateLimit';
+import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
 
-const limiter = rateLimit({ limit: 60, windowMs: 60_000 });
+const limiter = createLimiter({ limit: 60, windowMs: 60_000 });
 
 export default async function handler(req, res) {
+  applyApiSecurityHeaders(res);
+
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
 
   try {
-    try { await limiter.check(req); } catch (e) {
-      return res.status(e.status || 429).json({ message: e.message || 'Too many requests', retryAfter: e.retryAfter });
-    }
+    if (!(await enforceRateLimit(limiter, req, res))) return;
     await dbConnect();
 
     const { query, category, distance = 10, lat, lng } = req.query;

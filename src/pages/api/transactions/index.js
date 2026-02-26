@@ -1,6 +1,6 @@
 import dbConnect from '../../../lib/dbConnect';
 import Transaction from '../../../models/Transaction';
-import { requireAuth } from '../../../middleware/auth';
+import { requireAuthRateLimited } from '../../../middleware/auth';
 
 async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -51,4 +51,9 @@ async function handler(req, res) {
   }
 }
 
-export default requireAuth(handler);
+export default requireAuthRateLimited(handler, {
+  limit: 80,
+  windowMs: 60_000,
+  methods: ['GET'],
+  keyPrefix: 'transactions:index'
+});

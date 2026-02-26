@@ -1,6 +1,6 @@
 import dbConnect from '../../../lib/dbConnect';
 import Conversation from '../../../models/Conversation';
-import { requireAuth } from '../../../middleware/auth';
+import { requireAuthRateLimited } from '../../../middleware/auth';
 
 async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ message: 'Method not allowed' });
@@ -30,4 +30,9 @@ async function handler(req, res) {
   }
 }
 
-export default requireAuth(handler);
+export default requireAuthRateLimited(handler, {
+  limit: 120,
+  windowMs: 60_000,
+  methods: ['GET'],
+  keyPrefix: 'chat:unread'
+});

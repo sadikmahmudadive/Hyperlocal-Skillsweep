@@ -1,7 +1,7 @@
 import dbConnect from '../../../lib/dbConnect';
 import Review from '../../../models/Review';
 import mongoose from 'mongoose';
-import { requireAuth } from '../../../middleware/auth';
+import { requireAuthRateLimited } from '../../../middleware/auth';
 
 async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -49,4 +49,9 @@ async function handler(req, res) {
   }
 }
 
-export default requireAuth(handler);
+export default requireAuthRateLimited(handler, {
+  limit: 80,
+  windowMs: 60_000,
+  methods: ['GET'],
+  keyPrefix: 'reviews:index'
+});
