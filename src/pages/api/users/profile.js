@@ -1,6 +1,7 @@
 import dbConnect from '../../../lib/dbConnect';
 import User from '../../../models/User';
 import { requireAuthRateLimited } from '../../../middleware/auth';
+import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
 
 async function handler(req, res) {
   if (req.method !== 'PUT') {
@@ -112,8 +113,7 @@ async function handler(req, res) {
 }
 
 export default requireAuthRateLimited(handler, {
-  limit: 20,
-  windowMs: 60_000,
+  ...RATE_LIMIT_PROFILES.usersProfileWrite,
   methods: ['PUT'],
   keyPrefix: 'users:profile'
 });

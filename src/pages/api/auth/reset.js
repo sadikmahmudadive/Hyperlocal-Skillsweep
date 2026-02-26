@@ -5,10 +5,10 @@ import bcrypt from 'bcryptjs';
 import cookie from 'cookie';
 import { signToken } from '../../../lib/auth';
 import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
+import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
 
 const resetLimiter = createLimiter({
-  limit: 10,
-  windowMs: 30 * 60 * 1000,
+  ...RATE_LIMIT_PROFILES.authReset,
 });
 
 export default async function handler(req, res) {

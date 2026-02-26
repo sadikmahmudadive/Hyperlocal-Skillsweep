@@ -3,11 +3,11 @@ import User from '../../../models/User';
 import mongoose from 'mongoose';
 import { getTokenFromRequest, verifyToken } from '../../../lib/auth';
 import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
+import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
 
 const basicUserProjection = 'name avatar rating skillsOffered credits location bio';
 const writeLimiter = createLimiter({
-  limit: 40,
-  windowMs: 60_000,
+  ...RATE_LIMIT_PROFILES.usersFavoritesWrite,
   keyGenerator: (req) => {
     const xfwd = req.headers['x-forwarded-for'];
     const ip = Array.isArray(xfwd)

@@ -2,6 +2,7 @@ import dbConnect from '../../../lib/dbConnect';
 import Conversation from '../../../models/Conversation';
 import { requireAuthRateLimited } from '../../../middleware/auth';
 import { notifyUsers } from '../../../lib/sse';
+import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
 
 async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -39,8 +40,7 @@ async function handler(req, res) {
 }
 
 export default requireAuthRateLimited(handler, {
-  limit: 120,
-  windowMs: 60_000,
+  ...RATE_LIMIT_PROFILES.chatTypingWrite,
   methods: ['POST'],
   keyPrefix: 'chat:typing'
 });

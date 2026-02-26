@@ -1,8 +1,9 @@
 import dbConnect from '../../../lib/dbConnect';
 import User from '../../../models/User';
 import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
+import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
 
-const limiter = createLimiter({ limit: 60, windowMs: 60_000 });
+const limiter = createLimiter(RATE_LIMIT_PROFILES.publicSearch);
 
 export default async function handler(req, res) {
   applyApiSecurityHeaders(res);

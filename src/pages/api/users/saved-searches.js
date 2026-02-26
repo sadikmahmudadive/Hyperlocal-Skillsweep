@@ -3,11 +3,11 @@ import User from '../../../models/User';
 import mongoose from 'mongoose';
 import { getTokenFromRequest, verifyToken } from '../../../lib/auth';
 import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
+import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
 
 const ALLOWED_FILTER_KEYS = ['query', 'category', 'distance', 'sort', 'withinRadius', 'autoFit'];
 const writeLimiter = createLimiter({
-  limit: 30,
-  windowMs: 60_000,
+  ...RATE_LIMIT_PROFILES.usersSavedSearchesWrite,
   keyGenerator: (req) => {
     const xfwd = req.headers['x-forwarded-for'];
     const ip = Array.isArray(xfwd)

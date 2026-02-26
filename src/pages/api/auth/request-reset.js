@@ -3,10 +3,10 @@ import User from '../../../models/User';
 import jwt from 'jsonwebtoken';
 import sgMail from '@sendgrid/mail';
 import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
+import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
 
 const requestResetLimiter = createLimiter({
-  limit: 5,
-  windowMs: 15 * 60 * 1000,
+  ...RATE_LIMIT_PROFILES.authRequestReset,
   keyGenerator: (req) => {
     const email = String(req.body?.email || '').trim().toLowerCase();
     const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';

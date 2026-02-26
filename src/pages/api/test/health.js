@@ -1,7 +1,8 @@
 import dbConnect from '../../../lib/dbConnect';
 import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
+import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
 
-const limiter = createLimiter({ limit: 20, windowMs: 60_000 });
+const limiter = createLimiter(RATE_LIMIT_PROFILES.testHealth);
 
 export default async function handler(req, res) {
   applyApiSecurityHeaders(res);

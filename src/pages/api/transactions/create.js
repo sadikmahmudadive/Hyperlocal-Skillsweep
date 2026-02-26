@@ -3,6 +3,7 @@ import Transaction from '../../../models/Transaction';
 import User from '../../../models/User';
 import paymentConfig, { creditsToFiat } from '../../../../config/payments';
 import { requireAuthRateLimited } from '../../../middleware/auth';
+import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
 
 async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -96,8 +97,7 @@ async function handler(req, res) {
 }
 
 export default requireAuthRateLimited(handler, {
-  limit: 12,
-  windowMs: 60_000,
+  ...RATE_LIMIT_PROFILES.transactionsCreate,
   methods: ['POST'],
   keyPrefix: 'transactions:create'
 });

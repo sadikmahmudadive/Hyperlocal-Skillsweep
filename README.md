@@ -185,4 +185,5 @@ Security notes
 
 - Most mutable API routes now include in-memory rate limits and stricter API security headers.
 - Test/debug endpoints under `/api/test/*` are intended for development and return `404` in production.
+- Rate-limit thresholds are centralized in `src/lib/rateLimitProfiles.js` for one-place tuning by endpoint risk class.
 

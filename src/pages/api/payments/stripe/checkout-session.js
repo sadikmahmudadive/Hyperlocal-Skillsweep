@@ -4,6 +4,7 @@ import { requireAuthRateLimited } from '../../../../middleware/auth';
 import User from '../../../../models/User';
 import TopUpIntent from '../../../../models/TopUpIntent';
 import { getStripeClient, getAppBaseUrl, toMinorUnits, describeCredits, stripeCurrency } from '../../../../lib/payments/stripe';
+import { RATE_LIMIT_PROFILES } from '../../../../lib/rateLimitProfiles';
 
 async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -112,8 +113,7 @@ async function handler(req, res) {
 }
 
 export default requireAuthRateLimited(handler, {
-  limit: 10,
-  windowMs: 60_000,
+  ...RATE_LIMIT_PROFILES.paymentsStripeCheckout,
   methods: ['POST'],
   keyPrefix: 'payments:stripe:checkout'
 });

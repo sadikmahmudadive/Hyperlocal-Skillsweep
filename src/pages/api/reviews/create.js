@@ -4,6 +4,7 @@ import User from '../../../models/User';
 import Transaction from '../../../models/Transaction';
 import mongoose from 'mongoose';
 import { requireAuthRateLimited } from '../../../middleware/auth';
+import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
 
 async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -99,8 +100,7 @@ async function handler(req, res) {
 }
 
 export default requireAuthRateLimited(handler, {
-  limit: 20,
-  windowMs: 60_000,
+  ...RATE_LIMIT_PROFILES.reviewsWrite,
   methods: ['POST'],
   keyPrefix: 'reviews:create'
 });

@@ -2,8 +2,9 @@ import dbConnect from '../../../lib/dbConnect';
 import Review from '../../../models/Review';
 import mongoose from 'mongoose';
 import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
+import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
 
-const limiter = createLimiter({ limit: 60, windowMs: 60_000 });
+const limiter = createLimiter(RATE_LIMIT_PROFILES.publicReviewStats);
 
 export default async function handler(req, res) {
   applyApiSecurityHeaders(res);

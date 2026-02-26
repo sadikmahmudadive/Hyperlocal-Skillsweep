@@ -3,6 +3,7 @@ import TopUpIntent from '../../../../models/TopUpIntent';
 import User from '../../../../models/User';
 import { requireAuthRateLimited } from '../../../../middleware/auth';
 import payments from '../../../../lib/payments';
+import { RATE_LIMIT_PROFILES } from '../../../../lib/rateLimitProfiles';
 
 async function handler(req, res) {
   const method = (req.method || '').toUpperCase();
@@ -42,8 +43,7 @@ async function handler(req, res) {
 }
 
 export default requireAuthRateLimited(handler, {
-  limit: 20,
-  windowMs: 60_000,
+  ...RATE_LIMIT_PROFILES.paymentsTopupConfirm,
   methods: ['POST'],
   keyPrefix: 'payments:topup:confirm'
 });

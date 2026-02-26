@@ -1,6 +1,7 @@
 import dbConnect from '../../../lib/dbConnect';
 import Transaction from '../../../models/Transaction';
 import { requireAuthRateLimited } from '../../../middleware/auth';
+import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
 
 async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -52,8 +53,7 @@ async function handler(req, res) {
 }
 
 export default requireAuthRateLimited(handler, {
-  limit: 80,
-  windowMs: 60_000,
+  ...RATE_LIMIT_PROFILES.transactionsRead,
   methods: ['GET'],
   keyPrefix: 'transactions:index'
 });

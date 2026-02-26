@@ -1,6 +1,7 @@
 import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
+import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
 
-const limiter = createLimiter({ limit: 30, windowMs: 60_000 });
+const limiter = createLimiter(RATE_LIMIT_PROFILES.publicGeocodeReverse);
 
 export default async function handler(req, res) {
   applyApiSecurityHeaders(res);

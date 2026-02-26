@@ -3,6 +3,7 @@ import Conversation from '../../../models/Conversation';
 import User from '../../../models/User';
 import { requireAuthRateLimited } from '../../../middleware/auth';
 import { notifyUsers } from '../../../lib/sse';
+import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
 
 async function handler(req, res) {
   if (req.method === 'GET') {
@@ -98,8 +99,7 @@ async function handler(req, res) {
 }
 
 export default requireAuthRateLimited(handler, {
-  limit: 60,
-  windowMs: 60_000,
+  ...RATE_LIMIT_PROFILES.chatMessagesWrite,
   methods: ['POST'],
   keyPrefix: 'chat:messages'
 });

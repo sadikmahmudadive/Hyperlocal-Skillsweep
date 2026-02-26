@@ -4,10 +4,10 @@ import bcrypt from 'bcryptjs';
 import cookie from 'cookie';
 import { signToken } from '../../../lib/auth';
 import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../lib/security';
+import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
 
 const loginLimiter = createLimiter({
-  limit: 10,
-  windowMs: 15 * 60 * 1000,
+  ...RATE_LIMIT_PROFILES.authLogin,
   keyGenerator: (req) => {
     const email = String(req.body?.email || '').trim().toLowerCase();
     const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';

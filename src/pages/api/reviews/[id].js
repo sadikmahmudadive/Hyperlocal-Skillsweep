@@ -3,6 +3,7 @@ import Review from '../../../models/Review';
 import User from '../../../models/User';
 import mongoose from 'mongoose';
 import { requireAuthRateLimited } from '../../../middleware/auth';
+import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
 
 async function handler(req, res) {
   const { id } = req.query;
@@ -62,8 +63,7 @@ async function handler(req, res) {
 }
 
 export default requireAuthRateLimited(handler, {
-  limit: 20,
-  windowMs: 60_000,
+  ...RATE_LIMIT_PROFILES.reviewsWrite,
   methods: ['PUT', 'DELETE'],
   keyPrefix: 'reviews:item'
 });

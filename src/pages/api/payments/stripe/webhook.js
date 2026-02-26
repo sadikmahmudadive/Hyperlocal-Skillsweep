@@ -4,6 +4,7 @@ import TopUpIntent from '../../../../models/TopUpIntent';
 import User from '../../../../models/User';
 import { getStripeClient } from '../../../../lib/payments/stripe';
 import { applyApiSecurityHeaders, createLimiter, enforceRateLimit } from '../../../../lib/security';
+import { RATE_LIMIT_PROFILES } from '../../../../lib/rateLimitProfiles';
 
 export const config = {
   api: {
@@ -13,8 +14,7 @@ export const config = {
 
 const relevantEvents = new Set(['checkout.session.completed']);
 const webhookLimiter = createLimiter({
-  limit: 120,
-  windowMs: 60_000,
+  ...RATE_LIMIT_PROFILES.paymentsStripeWebhook,
   keyGenerator: (req) => {
     const xfwd = req.headers['x-forwarded-for'];
     const ip = Array.isArray(xfwd)

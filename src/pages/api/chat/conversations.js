@@ -2,6 +2,7 @@ import dbConnect from '../../../lib/dbConnect';
 import Conversation from '../../../models/Conversation';
 import User from '../../../models/User';
 import { requireAuthRateLimited } from '../../../middleware/auth';
+import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
 
 async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -50,9 +51,7 @@ async function handler(req, res) {
   }
 }
 
-export default requireAuthRateLimited(handler, {
-  limit: 80,
-  windowMs: 60_000,
+export default requireAuthRateLimited(handler, { ...RATE_LIMIT_PROFILES.chatConversationsRead,
   methods: ['GET'],
   keyPrefix: 'chat:conversations'
 });

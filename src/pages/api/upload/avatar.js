@@ -3,6 +3,7 @@ import User from '../../../models/User';
 import cloudinary from '../../../lib/cloudinary';
 import { requireAuthRateLimited } from '../../../middleware/auth';
 import { applyApiSecurityHeaders, parseBase64Image } from '../../../lib/security';
+import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
 
 export const config = {
   api: {
@@ -110,8 +111,7 @@ async function handler(req, res) {
 }
 
 export default requireAuthRateLimited(handler, {
-  limit: 12,
-  windowMs: 60_000,
+  ...RATE_LIMIT_PROFILES.avatarUploadWrite,
   methods: ['POST'],
   keyPrefix: 'upload:avatar'
 });

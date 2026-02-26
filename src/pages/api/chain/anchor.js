@@ -2,6 +2,7 @@ import dbConnect from '../../../lib/dbConnect';
 import Transaction from '../../../models/Transaction';
 import { requireAuthRateLimited } from '../../../middleware/auth';
 import { anchorTransactionProof } from '../../../lib/blockchain';
+import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
 
 async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
@@ -25,8 +26,7 @@ async function handler(req, res) {
 }
 
 export default requireAuthRateLimited(handler, {
-  limit: 10,
-  windowMs: 60_000,
+  ...RATE_LIMIT_PROFILES.chainAnchorWrite,
   methods: ['POST'],
   keyPrefix: 'chain:anchor'
 });

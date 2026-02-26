@@ -1,6 +1,7 @@
 import dbConnect from '../../../lib/dbConnect';
 import Conversation from '../../../models/Conversation';
 import { requireAuthRateLimited } from '../../../middleware/auth';
+import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
 
 async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ message: 'Method not allowed' });
@@ -31,8 +32,7 @@ async function handler(req, res) {
 }
 
 export default requireAuthRateLimited(handler, {
-  limit: 120,
-  windowMs: 60_000,
+  ...RATE_LIMIT_PROFILES.chatUnreadRead,
   methods: ['GET'],
   keyPrefix: 'chat:unread'
 });
