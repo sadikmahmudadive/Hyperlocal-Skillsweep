@@ -75,6 +75,7 @@ export default function ChatPage() {
   const [listFilter, setListFilter] = useState('all');
   const searchInputRef = useRef(null);
   const esRef = useRef(null);
+  const refreshInFlightRef = useRef(false);
 
   const filterChips = [
     { id: 'all', label: 'All' },
@@ -133,8 +134,7 @@ export default function ChatPage() {
   }, [query]);
 
   useEffect(() => {
-    fetchConversations();
-    fetchUnread();
+    refreshChatState();
   }, []);
 
   useAutoRefresh(120000);
@@ -145,17 +145,39 @@ export default function ChatPage() {
     const es = new EventSource('/api/events/stream');
     esRef.current = es;
     const refresh = () => {
-      fetchConversations();
-      fetchUnread();
+      refreshChatState();
     };
+    es.addEventListener('ready', refresh);
     es.addEventListener('message', refresh);
     es.addEventListener('conversation-start', refresh);
     es.addEventListener('read', refresh);
     return () => {
+      es.removeEventListener('ready', refresh);
       es.removeEventListener('message', refresh);
       es.removeEventListener('conversation-start', refresh);
       es.removeEventListener('read', refresh);
       es.close();
+    };
+  }, []);
+
+  useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) return;
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        refreshChatState();
+      }
+    };
+
+    const intervalId = setInterval(() => {
+      refreshChatState();
+    }, 7000);
+
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, []);
 
@@ -178,7 +200,15 @@ export default function ChatPage() {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
-      if (res.ok) setConversations(data.conversations || []);
+      if (res.ok) {
+        const nextConversations = data.conversations || [];
+        setConversations(nextConversations);
+        setSelectedConversation(prev => {
+          if (!prev?._id) return prev;
+          const refreshed = nextConversations.find(c => c._id === prev._id);
+          return refreshed || prev;
+        });
+      }
     } catch (error) {
       console.error('Error fetching conversations', error);
     } finally {
@@ -196,6 +226,16 @@ export default function ChatPage() {
       if (res.ok) setUnreadMap(data.unreadCounts || data.perConversation || {});
     } catch (error) {
       console.error('Error fetching unread counts', error);
+    }
+  };
+
+  const refreshChatState = async () => {
+    if (refreshInFlightRef.current) return;
+    refreshInFlightRef.current = true;
+    try {
+      await Promise.all([fetchConversations(), fetchUnread()]);
+    } finally {
+      refreshInFlightRef.current = false;
     }
   };
 
@@ -614,6 +654,7 @@ export default function ChatPage() {
               <ChatWindow
                 conversation={selectedConversation}
                 onClose={() => setSelectedConversation(null)}
+                onConversationActivity={refreshChatState}
               />
             ) : (
               <div className='flex-1 flex flex-col items-center justify-center text-slate-400 p-8 text-center'>

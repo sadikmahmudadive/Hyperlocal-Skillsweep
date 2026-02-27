@@ -7,7 +7,7 @@ import { resolveAvatarUrl } from '../../lib/avatar';
 
 const COMMON_EMOJIS = ['👍', '👋', '😊', '😂', '❤️', '🎉', '🤔', '👀', '🔥', '✨'];
 
-export default function ChatWindow({ conversation, onClose }) {
+export default function ChatWindow({ conversation, onClose, onConversationActivity }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -83,6 +83,7 @@ export default function ChatWindow({ conversation, onClose }) {
       );
       setShowJumpUnread(false);
       refreshUnreadBestEffort();
+      onConversationActivity?.();
     } catch (_) {}
   };
 
@@ -146,6 +147,7 @@ export default function ChatWindow({ conversation, onClose }) {
             if (prev.some((m) => m._id === data.message._id)) return prev;
             return [...prev, data.message];
           });
+          onConversationActivity?.();
           if (isAtBottom) {
             requestAnimationFrame(() => scrollToBottom());
             if (String(data?.message?.sender?._id) !== String(user.id)) {
@@ -354,6 +356,7 @@ export default function ChatWindow({ conversation, onClose }) {
       const data = await response.json();
       if (response.ok) {
         setMessages(prev => prev.map(m => m._id === tempId ? data.message : m));
+        onConversationActivity?.();
         const refreshFn = () => fetchMessages(true);
         if (triggerRefresh) {
           triggerRefresh({ message: 'Syncing chat…', refreshFn });
