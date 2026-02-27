@@ -227,6 +227,8 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
 
   // Subscribe to SSE for live message inserts and typing
   const [sseConnected, setSseConnected] = useState(true);
+  const [sseReconnectCount, setSseReconnectCount] = useState(0);
+  const [lastSseEventAt, setLastSseEventAt] = useState(null);
   useEffect(() => {
     if (!conversation) return;
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -249,12 +251,18 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
     const es = new EventSource(`/api/events/stream?token=${encodeURIComponent(token)}`);
     es.onopen = () => {
       setSseConnected(true);
+      setSseReconnectCount(0);
       stopFallbackPolling();
+    };
+    const onReady = () => {
+      setSseConnected(true);
+      setLastSseEventAt(Date.now());
     };
     const onMessage = (ev) => {
       try {
         const data = JSON.parse(ev.data);
         if (data?.conversationId === conversation._id && data?.message) {
+          setLastSseEventAt(Date.now());
           const normalizedMessage = normalizeIncomingMessage(data.message);
           setMessages((prev) => {
             if (prev.some((m) => m._id === normalizedMessage._id)) return prev;
@@ -280,6 +288,7 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
       try {
         const data = JSON.parse(ev.data);
         if (data?.conversationId === conversation._id && data?.userId !== user.id) {
+          setLastSseEventAt(Date.now());
           setTypingUsers((prev) => ({ ...prev, [data.userId]: data.isTyping ? Date.now() : 0 }));
         }
       } catch {}
@@ -288,6 +297,7 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
       try {
         const data = JSON.parse(ev.data);
         if (data?.conversationId !== conversation._id) return;
+        setLastSseEventAt(Date.now());
         const readerId = String(data?.readerId);
         if (!readerId) return;
 
@@ -304,14 +314,17 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
         );
       } catch {}
     };
+    es.addEventListener('ready', onReady);
     es.addEventListener('message', onMessage);
     es.addEventListener('typing', onTyping);
     es.addEventListener('read', onRead);
     es.onerror = () => {
       setSseConnected(false);
+      setSseReconnectCount((n) => n + 1);
       startFallbackPolling();
     };
     return () => {
+      es.removeEventListener('ready', onReady);
       es.removeEventListener('message', onMessage);
       es.removeEventListener('typing', onTyping);
       es.removeEventListener('read', onRead);
@@ -641,6 +654,13 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
             <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
               {conversation?.skillTopic && <span className="px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">{conversation.skillTopic}</span>}
               {someoneTyping && <span className="text-emerald-500 animate-pulse ml-1">typing...</span>}
+              <span
+                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${sseConnected ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200' : 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200'}`}
+                title={lastSseEventAt ? `Last event: ${new Date(lastSseEventAt).toLocaleTimeString()}` : 'Waiting for realtime events'}
+              >
+                <span className={`h-1.5 w-1.5 rounded-full ${sseConnected ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
+                {sseConnected ? 'Live' : `Reconnecting${sseReconnectCount ? ` (${sseReconnectCount})` : ''}`}
+              </span>
             </p>
           </div>
         </div>
@@ -695,7 +715,7 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
           </svg>
-          Reconnecting...
+          Reconnecting{sseReconnectCount ? ` (${sseReconnectCount})` : ''}...
         </div>
       )}
 
