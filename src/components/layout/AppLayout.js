@@ -39,6 +39,10 @@ export default function AppLayout({ children }) {
       }
       return;
     }
+    let disposed = false;
+    let reconnectTimer = null;
+    let fallbackTimer = null;
+
     const getAuthHeaders = () => {
       try {
         const token = localStorage.getItem('token');
@@ -48,61 +52,78 @@ export default function AppLayout({ children }) {
       }
     };
 
-    // Fetch precise unread initially
-    fetch('/api/chat/unread', { headers: getAuthHeaders() })
-      .then(r => r.ok ? r.json() : { total: 0 })
-      .then(d => { if (typeof d?.total === 'number') { setHasUnread(d.total > 0); setUnreadCount(Math.min(99, d.total)); }})
-      .catch(() => {});
-
-    const url = `/api/events/stream`;
-    const es = new EventSource(url, { withCredentials: false });
-    esRef.current = es;
-    es.onmessage = () => {};
-    es.addEventListener('ready', () => {
-      setSseDisconnected(false);
-    });
-    es.addEventListener('message', (ev) => {
+    const refreshUnread = async () => {
       try {
-        const data = JSON.parse(ev.data);
-        if (data?.conversationId) {
-          // fetch precise on message to stay accurate
-          fetch('/api/chat/unread', { headers: getAuthHeaders() })
-            .then(r => r.ok ? r.json() : { total: 0 })
-            .then(d => { if (typeof d?.total === 'number') { setHasUnread(d.total > 0); setUnreadCount(Math.min(99, d.total)); }})
-            .catch(() => { setHasUnread(true); setUnreadCount((c) => Math.min(99, c + 1)); });
+        const r = await fetch('/api/chat/unread', { headers: getAuthHeaders() });
+        const d = r.ok ? await r.json() : { total: 0 };
+        if (typeof d?.total === 'number') {
+          setHasUnread(d.total > 0);
+          setUnreadCount(Math.min(99, d.total));
         }
-      } catch {}
-    });
-    es.addEventListener('conversation-start', () => {
-      fetch('/api/chat/unread', { headers: getAuthHeaders() })
-        .then(r => r.ok ? r.json() : { total: 0 })
-        .then(d => { if (typeof d?.total === 'number') { setHasUnread(d.total > 0); setUnreadCount(Math.min(99, d.total)); }})
-        .catch(() => { setHasUnread(true); setUnreadCount((c) => Math.min(99, c + 1)); });
-    });
-    es.addEventListener('read', () => {
-      // refresh on read receipts so the badge can decrease immediately
-      fetch('/api/chat/unread', { headers: getAuthHeaders() })
-        .then(r => r.ok ? r.json() : { total: 0 })
-        .then(d => { if (typeof d?.total === 'number') { setHasUnread(d.total > 0); setUnreadCount(Math.min(99, d.total)); }})
-        .catch(() => {});
-    });
-    es.onerror = () => {
-      // exponential backoff reconnect
-      es.close();
-      esRef.current = null;
-      const delay = reconnectRef.current.timeout;
-      const next = Math.min(delay * 2, 30000);
-      reconnectRef.current.timeout = next;
-      setSseDisconnected(true);
-      setTimeout(() => {
-        if (isAuthenticated && !esRef.current) {
-          setHasUnread((v) => v); // trigger effect rerun by state change
-        }
-      }, delay);
+      } catch (_) {}
     };
+
+    const connectSse = () => {
+      if (disposed || esRef.current) return;
+
+      const es = new EventSource('/api/events/stream', { withCredentials: false });
+      esRef.current = es;
+
+      const onActivity = () => {
+        refreshUnread();
+      };
+
+      es.addEventListener('ready', () => {
+        setSseDisconnected(false);
+        reconnectRef.current.timeout = 1000;
+        refreshUnread();
+      });
+      es.addEventListener('message', onActivity);
+      es.addEventListener('conversation-start', onActivity);
+      es.addEventListener('read', onActivity);
+
+      es.onerror = () => {
+        try {
+          es.close();
+        } catch (_) {}
+        if (esRef.current === es) esRef.current = null;
+        setSseDisconnected(true);
+
+        const delay = reconnectRef.current.timeout;
+        reconnectRef.current.timeout = Math.min(delay * 2, 30000);
+        reconnectTimer = setTimeout(() => {
+          reconnectTimer = null;
+          connectSse();
+        }, delay);
+      };
+    };
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        refreshUnread();
+      }
+    };
+
+    refreshUnread();
+    connectSse();
+    fallbackTimer = setInterval(refreshUnread, 15000);
+    document.addEventListener('visibilitychange', onVisible);
+
     return () => {
-      es.close();
-      esRef.current = null;
+      disposed = true;
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
+      if (fallbackTimer) {
+        clearInterval(fallbackTimer);
+        fallbackTimer = null;
+      }
+      document.removeEventListener('visibilitychange', onVisible);
+      if (esRef.current) {
+        esRef.current.close();
+        esRef.current = null;
+      }
       reconnectRef.current.timeout = 1000;
       setSseDisconnected(false);
     };
