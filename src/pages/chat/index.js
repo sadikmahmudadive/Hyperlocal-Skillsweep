@@ -142,7 +142,7 @@ export default function ChatPage() {
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     if (!token) return;
-    const es = new EventSource('/api/events/stream');
+    const es = new EventSource(`/api/events/stream?token=${encodeURIComponent(token)}`);
     esRef.current = es;
     const refresh = () => {
       refreshChatState();

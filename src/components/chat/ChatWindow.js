@@ -137,7 +137,9 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
   const [sseConnected, setSseConnected] = useState(true);
   useEffect(() => {
     if (!conversation) return;
-    const es = new EventSource('/api/events/stream');
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) return;
+    const es = new EventSource(`/api/events/stream?token=${encodeURIComponent(token)}`);
     es.onopen = () => setSseConnected(true);
     const onMessage = (ev) => {
       try {

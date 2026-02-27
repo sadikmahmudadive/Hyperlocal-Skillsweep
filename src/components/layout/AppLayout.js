@@ -66,7 +66,13 @@ export default function AppLayout({ children }) {
     const connectSse = () => {
       if (disposed || esRef.current) return;
 
-      const es = new EventSource('/api/events/stream', { withCredentials: false });
+      let token = null;
+      try {
+        token = localStorage.getItem('token');
+      } catch (_) {}
+      if (!token) return;
+
+      const es = new EventSource(`/api/events/stream?token=${encodeURIComponent(token)}`, { withCredentials: false });
       esRef.current = es;
 
       const onActivity = () => {

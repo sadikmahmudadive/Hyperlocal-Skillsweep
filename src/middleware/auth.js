@@ -14,6 +14,13 @@ function getCookie(req, name) {
   return null;
 }
 
+function getQueryToken(req) {
+  const raw = req?.query?.token;
+  if (Array.isArray(raw)) return raw[0] || null;
+  if (typeof raw === 'string' && raw.trim()) return raw.trim();
+  return null;
+}
+
 export const requireAuth = (handler) => {
   return async (req, res) => {
     applyApiSecurityHeaders(res);
@@ -25,6 +32,9 @@ export const requireAuth = (handler) => {
     let token = req.headers.authorization?.replace('Bearer ', '');
     if (!token) {
       token = getCookie(req, 'sseso');
+    }
+    if (!token) {
+      token = getQueryToken(req);
     }
     
     if (!token) {
