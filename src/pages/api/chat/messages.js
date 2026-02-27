@@ -1,7 +1,7 @@
 import { requireAuthRateLimited } from '../../../middleware/auth';
 import { notifyUsers } from '../../../lib/sse';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
-import { addConversationMessage, getConversationById, getUsersByIds } from '../../../lib/firestoreStore';
+import { addConversationMessage, getConversationById, getUserById, getUsersByIds } from '../../../lib/firestoreStore';
 
 async function handler(req, res) {
   if (req.method === 'GET') {
@@ -63,15 +63,22 @@ async function handler(req, res) {
         type: type || 'text'
       });
       const savedMessage = updated?.lastMessage;
+      const senderUser = await getUserById(userId);
+      const shapedMessage = {
+        ...(savedMessage || {}),
+        sender: senderUser
+          ? { _id: senderUser.id || senderUser._id, name: senderUser.name, avatar: senderUser.avatar }
+          : { _id: String(userId) }
+      };
 
       try {
         notifyUsers((conversation.participants || []).map(p => String(p)), 'message', {
           conversationId,
-          message: savedMessage
+          message: shapedMessage
         });
       } catch (_) {}
 
-      res.status(201).json({ message: savedMessage });
+      res.status(201).json({ message: shapedMessage });
     } catch (error) {
       res.status(500).json({ message: 'Error sending message' });
     }
