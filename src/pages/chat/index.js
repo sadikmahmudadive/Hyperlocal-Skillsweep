@@ -76,6 +76,7 @@ export default function ChatPage() {
   const [streamConnected, setStreamConnected] = useState(false);
   const [streamReconnectCount, setStreamReconnectCount] = useState(0);
   const [lastStreamEventAt, setLastStreamEventAt] = useState(null);
+  const [streamRetryNonce, setStreamRetryNonce] = useState(0);
   const searchInputRef = useRef(null);
   const esRef = useRef(null);
   const reconnectTimerRef = useRef(null);
@@ -218,7 +219,7 @@ export default function ChatPage() {
       }
       setStreamConnected(false);
     };
-  }, [user?.id]);
+  }, [user?.id, streamRetryNonce]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -302,6 +303,23 @@ export default function ChatPage() {
     } finally {
       refreshInFlightRef.current = false;
     }
+  };
+
+  const retryInboxStreamNow = () => {
+    try {
+      if (esRef.current) {
+        esRef.current.close();
+        esRef.current = null;
+      }
+    } catch (_) {}
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+    reconnectDelayRef.current = 1000;
+    setStreamConnected(false);
+    setStreamRetryNonce((n) => n + 1);
+    refreshChatState();
   };
 
   const fetchSuggested = async () => {
@@ -441,6 +459,16 @@ export default function ChatPage() {
                       <span className={`h-1.5 w-1.5 rounded-full ${streamConnected ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
                       {streamConnected ? 'Live' : `Reconnecting${streamReconnectCount ? ` (${streamReconnectCount})` : ''}`}
                     </span>
+                    {!streamConnected && (
+                      <button
+                        type='button'
+                        onClick={retryInboxStreamNow}
+                        className='inline-flex items-center rounded-full border border-amber-300/70 dark:border-amber-600/60 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-500/10'
+                        title='Retry stream now'
+                      >
+                        Retry now
+                      </button>
+                    )}
                   </div>
                 </div>
                 <div className='flex items-center gap-2'>
