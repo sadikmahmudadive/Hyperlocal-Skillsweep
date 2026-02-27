@@ -28,6 +28,7 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState([]);
+  const [streamRetryNonce, setStreamRetryNonce] = useState(0);
   const textareaRef = useRef(null);
   const [showDetails, setShowDetails] = useState(false);
   const isAtBottomRef = useRef(true);
@@ -331,7 +332,7 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
       es.close();
       stopFallbackPolling();
     };
-  }, [conversation?._id, user?.id]);
+  }, [conversation?._id, user?.id, streamRetryNonce]);
 
   // When user scrolls back to bottom, mark any visible unread messages read.
   useEffect(() => {
@@ -578,6 +579,12 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
       setAiLoading(false);
     }
   };
+
+  const retryRealtimeNow = () => {
+    setSseConnected(false);
+    setStreamRetryNonce((n) => n + 1);
+    fetchMessages(true, null, { skipMarkRead: true });
+  };
   
   const isOnline = (u) => {
     if (!u?.lastActive) return false;
@@ -716,6 +723,13 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
           </svg>
           Reconnecting{sseReconnectCount ? ` (${sseReconnectCount})` : ''}...
+          <button
+            type="button"
+            onClick={retryRealtimeNow}
+            className="ml-2 inline-flex items-center rounded-full border border-amber-300/70 dark:border-amber-600/60 px-2 py-0.5 text-[10px] font-semibold hover:bg-amber-100 dark:hover:bg-amber-500/10"
+          >
+            Retry now
+          </button>
         </div>
       )}
 
