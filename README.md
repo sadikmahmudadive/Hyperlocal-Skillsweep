@@ -150,6 +150,11 @@ Optional (credits tuning):
 
 - `CREDIT_RATE_BDT` (defaults to `50`)
 
+Optional (AI chat reply suggestions):
+
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL` (defaults to `gpt-4o-mini`)
+
 Optional (blockchain integration toggle):
 
 - `ENABLE_CHAIN` (`true`/`false`)

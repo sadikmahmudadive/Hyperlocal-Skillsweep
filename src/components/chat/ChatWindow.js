@@ -26,6 +26,8 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
   const [showJumpUnread, setShowJumpUnread] = useState(false);
   const [searchingUnread, setSearchingUnread] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState([]);
   const textareaRef = useRef(null);
   const [showDetails, setShowDetails] = useState(false);
   const senderCacheRef = useRef(new Map());
@@ -201,6 +203,7 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
     setNextCursor(null);
     setNewMsgCount(0);
     setShowJumpUnread(!!conversation?.unreadCount);
+    setAiSuggestions([]);
     fetchMessages(false, null);
   }, [conversation?._id]);
 
@@ -490,6 +493,37 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
   const handleQuickReply = (text) => {
     sendInternal(text, 'text');
   };
+
+  const fetchAiSuggestions = async () => {
+    if (!conversation?._id || aiLoading) return;
+    try {
+      setAiLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch('/api/chat/suggest-reply', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ conversationId: conversation._id }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        const suggestions = Array.isArray(data?.suggestions) ? data.suggestions : [];
+        setAiSuggestions(suggestions.slice(0, 3));
+      } else {
+        addToast({ type: 'error', title: 'AI suggestions', message: data?.message || 'Could not generate suggestions' });
+      }
+    } catch (error) {
+      console.error('AI suggestion error:', error);
+      addToast({ type: 'error', title: 'AI suggestions', message: 'Could not generate suggestions' });
+    } finally {
+      setAiLoading(false);
+    }
+  };
   
   const isOnline = (u) => {
     if (!u?.lastActive) return false;
@@ -775,6 +809,24 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
             ))}
           </div>
         )}
+
+        {aiSuggestions.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-3">
+            {aiSuggestions.map((reply, idx) => (
+              <button
+                key={`${reply}-${idx}`}
+                type="button"
+                onClick={() => {
+                  setNewMessage(reply);
+                  textareaRef.current?.focus();
+                }}
+                className="px-3 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-500/40 text-xs text-emerald-700 dark:text-emerald-200 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
+              >
+                {reply}
+              </button>
+            ))}
+          </div>
+        )}
         
         <div className="flex items-end gap-2 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-3xl border border-slate-200 dark:border-slate-700 focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-500 transition-all">
           <button
@@ -793,6 +845,20 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
             title="Add emoji"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          </button>
+
+          <button
+            type="button"
+            className="p-2 text-slate-400 hover:text-emerald-500 transition-colors rounded-full hover:bg-emerald-50 dark:hover:bg-emerald-500/10 disabled:opacity-60"
+            onClick={fetchAiSuggestions}
+            title="Suggest reply"
+            disabled={aiLoading}
+          >
+            {aiLoading ? (
+              <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 12a8 8 0 018-8" /></svg>
+            ) : (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3l1.8 3.9L18 9l-4.2 2.1L12 15l-1.8-3.9L6 9l4.2-2.1L12 3zm6 10l1 2.2L21 16l-2 1-.9 2-1-2L15 16l2-1 .9-2zM6 14l.8 1.8L9 17l-2.2 1.1L6 20l-.8-1.9L3 17l2.2-1.2L6 14z" /></svg>
+            )}
           </button>
           
           <textarea

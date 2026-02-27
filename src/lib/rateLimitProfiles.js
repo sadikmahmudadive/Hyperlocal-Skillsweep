@@ -26,6 +26,7 @@ export const RATE_LIMIT_PROFILES = {
   chatStartWrite: { limit: 25, windowMs: 60_000 },
   chatTypingWrite: { limit: 120, windowMs: 60_000 },
   chatUploadWrite: { limit: 20, windowMs: 60_000 },
+  chatSuggestWrite: { limit: 20, windowMs: 60_000 },
 
   reviewsRead: { limit: 80, windowMs: 60_000 },
   reviewsExistsBatchWrite: { limit: 30, windowMs: 60_000 },
