@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth, useRequireAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
+import { resolveAvatarUrl } from '../../lib/avatar';
 
 export default function FavoritesPage() {
   const { user, refreshFavorites, removeFavorite, requireAuth } = useAuth();
@@ -111,7 +112,7 @@ export default function FavoritesPage() {
                 <div key={userId} className="card rounded-lg border border-soft hover:shadow-elevated transition">
                   <div className="p-4 flex items-center gap-4">
                     <img
-                      src={fav.avatar?.url || `https://ui-avatars.com/api/?name=${encodeURIComponent(fav.name || 'U')}&background=0ea5e9&color=fff&size=128&bold=true`}
+                      src={resolveAvatarUrl(fav, { fallbackName: fav?.name || 'U', size: 128 })}
                       alt={fav.name}
                       className="h-16 w-16 rounded-full object-cover ring-2 ring-green-500/50"
                     />

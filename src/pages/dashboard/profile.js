@@ -8,9 +8,11 @@ import InteractiveCard from '../../components/ui/InteractiveCard';
 import GradientPill from '../../components/ui/GradientPill';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { Button } from '../../components/ui/Button';
+import { buildDefaultAvatarUrl, resolveAvatarUrl } from '../../lib/avatar';
 
 export default function EditProfile() {
   const { user, updateUserProfile } = useAuth();
+  const currentAvatarUrl = resolveAvatarUrl(user, { fallbackName: user?.name || 'User', size: 256 });
   const [formData, setFormData] = useState({
     name: '',
     bio: '',
@@ -43,12 +45,12 @@ export default function EditProfile() {
         maxDistance: user.preferences?.maxDistance || 10,
         isAvailable: user.isAvailable !== false // default to true if undefined
       });
-      setAvatarPreview(user.avatar?.url || '');
+      setAvatarPreview(currentAvatarUrl || '');
       if (user.location?.coordinates && Array.isArray(user.location.coordinates) && user.location.coordinates.length === 2) {
         setCoords({ lat: user.location.coordinates[1], lng: user.location.coordinates[0] });
       }
     }
-  }, [user]);
+  }, [user, currentAvatarUrl]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -211,7 +213,7 @@ export default function EditProfile() {
     setUploadProgress(0);
 
     try {
-      let avatarUrl = user.avatar?.url;
+      let avatarUrl = currentAvatarUrl;
       let avatarPublicId = user.avatar?.public_id;
 
       // Upload avatar if a new one was selected
@@ -277,7 +279,7 @@ export default function EditProfile() {
         } catch (uploadError) {
           console.error('Avatar upload error:', uploadError);
           // Use fallback avatar
-          avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name)}&background=0ea5e9&color=fff&size=300`;
+          avatarUrl = buildDefaultAvatarUrl(formData.name, 300);
           setMessage('Profile updated! (Using fallback avatar due to upload issue: ' + uploadError.message + ')');
           addToast({ type: 'warning', title: 'Using fallback avatar', message: uploadError.message });
         }
@@ -306,7 +308,7 @@ export default function EditProfile() {
       }
 
       // Only include avatar if we have a new URL
-      if (avatarUrl && avatarUrl !== user.avatar?.url) {
+      if (avatarUrl && avatarUrl !== currentAvatarUrl) {
         updateData.avatar = { 
           url: avatarUrl,
           public_id: avatarPublicId || `avatar_${user.id}`
@@ -339,7 +341,7 @@ export default function EditProfile() {
 
   const removeAvatar = () => {
     setAvatar(null);
-    setAvatarPreview(user.avatar?.url || '');
+    setAvatarPreview(currentAvatarUrl || '');
     const fileInput = document.getElementById('avatar');
     if (fileInput) fileInput.value = '';
   };
@@ -422,7 +424,7 @@ export default function EditProfile() {
               className="relative h-28 w-28 overflow-hidden rounded-3xl ring-2 ring-emerald-300/70 ring-offset-2 ring-offset-white shadow-soft transition duration-300 hover:-translate-y-1 hover:shadow-elevated dark:ring-emerald-500/40 dark:ring-offset-slate-900"
             >
               <img
-                src={avatarPreview || user?.avatar?.url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=0ea5e9&color=fff&size=256&bold=true`}
+                src={avatarPreview || currentAvatarUrl}
                 alt="Avatar preview"
                 className="h-full w-full object-cover"
               />

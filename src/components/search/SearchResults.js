@@ -1,17 +1,11 @@
 import { useRouter } from 'next/router';
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from '../ui/LoadingSpinner';
+import { resolveAvatarUrl } from '../../lib/avatar';
 
 export default function SearchResults({ users, loading, onUserSelect, onHire, currentLocation, favorites = [], onToggleFavorite }) {
   const router = useRouter();
   const { user: currentUser } = useAuth();
-
-  const resolveAvatarUrl = (user) => {
-    if (typeof user?.avatar === 'string' && user.avatar.trim()) return user.avatar;
-    if (typeof user?.avatar?.url === 'string' && user.avatar.url.trim()) return user.avatar.url;
-    if (typeof user?.photoURL === 'string' && user.photoURL.trim()) return user.photoURL;
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=0ea5e9&color=fff&size=128&bold=true`;
-  };
 
   const handleUserClick = (user) => {
     // Use the correct ID field - try _id first, then id
@@ -121,7 +115,7 @@ export default function SearchResults({ users, loading, onUserSelect, onHire, cu
                 <div className="flex items-start gap-4">
                   <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-soft surface-card">
                     <img
-                      src={resolveAvatarUrl(user)}
+                      src={resolveAvatarUrl(user, { fallbackName: user?.name || 'U', size: 128 })}
                       alt={user.name || 'User avatar'}
                       className="h-full w-full object-cover"
                       loading="lazy"

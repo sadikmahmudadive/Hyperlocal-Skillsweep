@@ -1,5 +1,6 @@
 import { createContext, useContext, useReducer, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
+import { normalizeAvatar } from '../lib/avatar';
 
 const AuthContext = createContext();
 
@@ -66,8 +67,10 @@ export function AuthProvider({ children }) {
 
   const normalizeUser = (user) => {
     if (!user) return user;
+    const normalized = normalizeAvatar(user, { fallbackName: user?.name || 'User' });
     return {
       ...user,
+      ...normalized,
       favorites: Array.isArray(user.favorites) ? user.favorites : [],
       savedSearches: Array.isArray(user.savedSearches) ? user.savedSearches : []
     };

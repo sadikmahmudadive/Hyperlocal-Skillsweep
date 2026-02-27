@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { useAuth, useRequireAuth } from '../../contexts/AuthContext';
 import useAutoRefresh from '../../hooks/useAutoRefresh';
 import ChatWindow from '../../components/chat/ChatWindow';
+import { resolveAvatarUrl } from '../../lib/avatar';
 
 function HoverRatingRow({ user, ratingCache, setRatingCache }) {
   const uid = user?._id;
@@ -306,10 +307,14 @@ export default function ChatPage() {
           </nav>
           <button
             onClick={() => router.push('/dashboard/profile')}
-            className='w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/20 text-lg font-semibold'
+            className='w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/20 text-lg font-semibold overflow-hidden'
             title='Profile'
           >
-            {user?.name?.charAt(0) || '?'}
+            <img
+              src={resolveAvatarUrl(user, { fallbackName: user?.name || 'User', size: 96 })}
+              alt={user?.name || 'User avatar'}
+              className='w-full h-full object-cover'
+            />
           </button>
         </div>
 
@@ -409,9 +414,11 @@ export default function ChatPage() {
                     }}
                   >
                     <div className='relative'>
-                      <div className='w-12 h-12 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-sm ring-2 ring-transparent group-hover:ring-emerald-400 transition-all'>
-                        {u.name.charAt(0)}
-                      </div>
+                      <img
+                        src={resolveAvatarUrl(u, { fallbackName: u?.name || 'User', size: 128 })}
+                        alt={u?.name || 'User avatar'}
+                        className='w-12 h-12 rounded-full object-cover shadow-sm ring-2 ring-transparent group-hover:ring-emerald-400 transition-all'
+                      />
                       <span className='absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full'></span>
                     </div>
                     <span className='text-[11px] font-medium text-slate-600 dark:text-slate-300 truncate max-w-[60px]'>
@@ -457,9 +464,11 @@ export default function ChatPage() {
                         >
                           <div className='flex items-start gap-3'>
                             <div className='relative'>
-                              <div className='w-12 h-12 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-sm'>
-                                {other?.name?.charAt(0)}
-                              </div>
+                              <img
+                                src={resolveAvatarUrl(other, { fallbackName: other?.name || 'User', size: 128 })}
+                                alt={other?.name || 'User avatar'}
+                                className='w-12 h-12 rounded-full object-cover shadow-sm'
+                              />
                               {isOnline(other) && (
                                 <span className='absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full'></span>
                               )}
@@ -524,9 +533,11 @@ export default function ChatPage() {
                           {suggested.map(u => (
                             <div key={u._id} className='group relative bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 hover:shadow-md transition-all'>
                               <div className='flex items-center gap-3'>
-                                <div className='w-10 h-10 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold'>
-                                  {u.name.charAt(0)}
-                                </div>
+                                <img
+                                  src={resolveAvatarUrl(u, { fallbackName: u?.name || 'User', size: 96 })}
+                                  alt={u?.name || 'User avatar'}
+                                  className='w-10 h-10 rounded-full object-cover'
+                                />
                                 <div className='flex-1 min-w-0'>
                                   <h4 className='font-medium text-slate-900 dark:text-white truncate'>{u.name}</h4>
                                   <HoverRatingRow user={u} ratingCache={ratingCache} setRatingCache={setRatingCache} />
@@ -571,9 +582,11 @@ export default function ChatPage() {
                           {people.map(u => (
                             <div key={u._id} className='bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 hover:shadow-md transition-all'>
                               <div className='flex items-center gap-3'>
-                                <div className='w-10 h-10 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold'>
-                                  {u.name.charAt(0)}
-                                </div>
+                                <img
+                                  src={resolveAvatarUrl(u, { fallbackName: u?.name || 'User', size: 96 })}
+                                  alt={u?.name || 'User avatar'}
+                                  className='w-10 h-10 rounded-full object-cover'
+                                />
                                 <div className='flex-1 min-w-0'>
                                   <h4 className='font-medium text-slate-900 dark:text-white truncate'>{u.name}</h4>
                                   <p className='text-xs text-slate-500 truncate'>{u.bio || 'No bio available'}</p>

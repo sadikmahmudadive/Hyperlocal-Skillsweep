@@ -2,6 +2,7 @@ import { requireAuthRateLimited } from '../../../middleware/auth';
 import { RATE_LIMIT_PROFILES } from '../../../lib/rateLimitProfiles';
 import { findUserById, toUserResponse, updateUserProfileById } from '../../../lib/userStore';
 import { geocodeAddress } from '../../../lib/firestoreStore';
+import { buildDefaultAvatarUrl } from '../../../lib/avatar';
 
 async function handler(req, res) {
   if (req.method !== 'PUT') {
@@ -41,7 +42,7 @@ async function handler(req, res) {
     // Handle avatar - generate if not provided but name changed
     if (!safeUpdateData.avatar && updateData.name) {
       const userName = updateData.name.trim();
-      const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=0ea5e9&color=fff&size=128&bold=true`;
+      const avatarUrl = buildDefaultAvatarUrl(userName, 128);
       safeUpdateData.avatar = {
         url: avatarUrl,
         public_id: `avatar_${userId}`

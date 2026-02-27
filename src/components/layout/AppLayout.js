@@ -5,6 +5,7 @@ import LogoutButton from './LogoutButton';
 import { useAuth } from '../../contexts/AuthContext';
 import { ThemeToggle } from './ThemeToggle';
 import { Button } from '../ui/Button';
+import { resolveAvatarUrl } from '../../lib/avatar';
 
 export default function AppLayout({ children }) {
   const { isAuthenticated, user } = useAuth();
@@ -206,7 +207,7 @@ export default function AppLayout({ children }) {
                   >
                     <span className="relative inline-flex h-10 w-10 overflow-hidden rounded-full ring-2 ring-emerald-400 ring-offset-2 ring-offset-white shadow-soft transition-transform duration-200 group-hover:scale-105 dark:ring-offset-slate-900">
                       <img
-                        src={user?.avatar?.url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'User')}&background=0ea5e9&color=fff&size=128&bold=true`}
+                        src={resolveAvatarUrl(user, { fallbackName: user?.name || 'User', size: 128 })}
                         alt={user?.name || 'User avatar'}
                         className="h-full w-full object-cover"
                       />

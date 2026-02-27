@@ -1,20 +1,19 @@
 import { createUser as createUserFs, getUserByEmail, getUserById, patchUser } from './firestoreStore';
+import { normalizeAvatar } from './avatar';
 
 export function getDbProvider() {
   return 'firestore';
 }
 
 function defaultUserDoc(data = {}) {
+  const userWithAvatar = normalizeAvatar(data, { fallbackName: data.name || 'U' });
   return {
     name: data.name || '',
     email: data.email || '',
     password: data.password || '',
     credits: typeof data.credits === 'number' ? data.credits : 2,
     bio: data.bio || '',
-    avatar: data.avatar || {
-      public_id: '',
-      url: 'https://ui-avatars.com/api/?name=U&background=0ea5e9&color=fff&size=128&bold=true'
-    },
+    avatar: userWithAvatar.avatar,
     rating: data.rating || { average: 0, count: 0 },
     skillsOffered: Array.isArray(data.skillsOffered) ? data.skillsOffered : [],
     skillsNeeded: Array.isArray(data.skillsNeeded) ? data.skillsNeeded : [],
@@ -31,22 +30,23 @@ function defaultUserDoc(data = {}) {
 }
 
 function shapePublicUser(doc) {
+  const normalized = normalizeAvatar(doc, { fallbackName: doc?.name || 'User' });
   return {
-    id: doc.id,
-    _id: doc.id,
-    name: doc.name,
-    email: doc.email,
-    credits: doc.credits || 0,
-    bio: doc.bio || '',
-    address: doc.location?.address || '',
-    avatar: doc.avatar,
-    rating: doc.rating || { average: 0, count: 0 },
-    skillsOffered: doc.skillsOffered || [],
-    skillsNeeded: doc.skillsNeeded || [],
-    lastActive: doc.lastActive,
-    location: doc.location,
-    favorites: doc.favorites || [],
-    savedSearches: (doc.savedSearches || []).map((entry) => ({
+    id: normalized.id,
+    _id: normalized.id,
+    name: normalized.name,
+    email: normalized.email,
+    credits: normalized.credits || 0,
+    bio: normalized.bio || '',
+    address: normalized.location?.address || '',
+    avatar: normalized.avatar,
+    rating: normalized.rating || { average: 0, count: 0 },
+    skillsOffered: normalized.skillsOffered || [],
+    skillsNeeded: normalized.skillsNeeded || [],
+    lastActive: normalized.lastActive,
+    location: normalized.location,
+    favorites: normalized.favorites || [],
+    savedSearches: (normalized.savedSearches || []).map((entry) => ({
       id: entry.id || entry._id || '',
       name: entry.name,
       filters: entry.filters || {}

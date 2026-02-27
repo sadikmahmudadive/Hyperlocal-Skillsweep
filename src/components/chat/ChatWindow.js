@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRefresh } from '../../contexts/RefreshContext';
+import { resolveAvatarUrl } from '../../lib/avatar';
 
 const COMMON_EMOJIS = ['👍', '👋', '😊', '😂', '❤️', '🎉', '🤔', '👀', '🔥', '✨'];
 
@@ -456,9 +457,11 @@ export default function ChatWindow({ conversation, onClose }) {
       <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm z-10">
         <div className="flex items-center space-x-4">
           <div className="relative">
-            <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center text-white font-bold shadow-sm">
-              {otherParticipant?.name?.charAt(0)}
-            </div>
+            <img
+              src={resolveAvatarUrl(otherParticipant, { fallbackName: otherParticipant?.name || 'User', size: 96 })}
+              alt={otherParticipant?.name || 'User avatar'}
+              className="w-10 h-10 rounded-full object-cover shadow-sm"
+            />
             {otherParticipant && (
                <span className={`absolute bottom-0 right-0 w-3.5 h-3.5 border-2 border-white dark:border-slate-900 rounded-full ${
                  otherParticipant.isAvailable === false ? 'bg-slate-400' : (isOnline(otherParticipant) ? 'bg-emerald-500' : 'bg-amber-500')
@@ -570,9 +573,11 @@ export default function ChatWindow({ conversation, onClose }) {
               >
                 <div className={`flex max-w-[85%] sm:max-w-[75%] ${isMe ? 'flex-row-reverse' : 'flex-row'} items-end gap-2`}>
                   {!isMe && !isSameSender && (
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex-shrink-0 flex items-center justify-center text-[10px] text-white font-bold shadow-sm mb-1">
-                      {message.sender.name?.charAt(0)}
-                    </div>
+                    <img
+                      src={resolveAvatarUrl(message?.sender, { fallbackName: message?.sender?.name || 'User', size: 64 })}
+                      alt={message?.sender?.name || 'User avatar'}
+                      className="w-6 h-6 rounded-full object-cover flex-shrink-0 shadow-sm mb-1"
+                    />
                   )}
                   {!isMe && isSameSender && <div className="w-6" />} {/* Spacer */}
 
@@ -756,9 +761,11 @@ export default function ChatWindow({ conversation, onClose }) {
         </div>
         <div className="p-4 space-y-5 overflow-y-auto h-[calc(100%-64px)] custom-scrollbar">
           <div className="flex items-center gap-3">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-xl font-bold">
-              {otherParticipant?.name?.charAt(0)}
-            </div>
+            <img
+              src={resolveAvatarUrl(otherParticipant, { fallbackName: otherParticipant?.name || 'User', size: 128 })}
+              alt={otherParticipant?.name || 'User avatar'}
+              className="w-14 h-14 rounded-2xl object-cover"
+            />
             <div>
               <p className="font-semibold text-slate-900 dark:text-white">{otherParticipant?.name}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">

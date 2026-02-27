@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../../contexts/AuthContext';
 import Modal from '../../components/ui/Modal';
 import { useToast } from '../../contexts/ToastContext';
+import { resolveAvatarUrl } from '../../lib/avatar';
 
 export default function UserProfile() {
   const [user, setUser] = useState(null);
@@ -266,9 +267,11 @@ export default function UserProfile() {
         {/* Profile Header */}
         <div className="card p-6 mb-6">
           <div className="flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6">
-            <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center text-white text-3xl font-bold">
-              {user.name?.charAt(0) || 'U'}
-            </div>
+            <img
+              src={resolveAvatarUrl(user, { fallbackName: user?.name || 'User', size: 256 })}
+              alt={user?.name || 'User avatar'}
+              className="w-24 h-24 rounded-full object-cover"
+            />
             <div className="flex-1">
               <h1 className="text-3xl font-bold text-strong">{user.name}</h1>
               <p className="text-secondary mt-2">{user.bio || 'No bio provided'}</p>
@@ -413,7 +416,7 @@ export default function UserProfile() {
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-green-500/70">
                         <img
-                          src={review.reviewer?.avatar?.url || `https://ui-avatars.com/api/?name=${encodeURIComponent(review.reviewer?.name || 'User')}&background=0ea5e9&color=fff&size=128&bold=true`}
+                          src={resolveAvatarUrl(review.reviewer, { fallbackName: review.reviewer?.name || 'User', size: 128 })}
                           alt={review.reviewer?.name || 'Reviewer'}
                           className="w-full h-full object-cover"
                         />
