@@ -289,6 +289,15 @@ export default function AppLayout({ children }) {
                         <span aria-hidden>⭐</span>
                         <span>{l.label}</span>
                       </span>
+                    ) : l.href === '/chat' ? (
+                      <span className="inline-flex items-center gap-2">
+                        <span>{l.label}</span>
+                        {hasUnread && (
+                          <span className="inline-flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white shadow-soft">
+                            {unreadCount > 0 ? unreadCount : '•'}
+                          </span>
+                        )}
+                      </span>
                     ) : (
                       l.label
                     )}
