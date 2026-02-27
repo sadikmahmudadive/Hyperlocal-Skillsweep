@@ -23,9 +23,16 @@ async function handler(req, res) {
       limit,
     });
     const reviewerIds = Array.from(new Set((payload.reviews || []).map((r) => String(r.reviewer))));
+    const targetUserIds = Array.from(new Set((payload.reviews || []).map((r) => String(r.targetUser)).filter(Boolean)));
     const reviewers = await getUsersByIds(reviewerIds);
+    const targetUsers = await getUsersByIds(targetUserIds);
     const reviewerMap = new Map(reviewers.map((r) => [String(r.id || r._id), { _id: r.id || r._id, name: r.name, avatar: r.avatar }]));
-    const reviews = (payload.reviews || []).map((r) => ({ ...r, reviewer: reviewerMap.get(String(r.reviewer)) || { _id: r.reviewer } }));
+    const targetUserMap = new Map(targetUsers.map((u) => [String(u.id || u._id), { _id: u.id || u._id, name: u.name, avatar: u.avatar }]));
+    const reviews = (payload.reviews || []).map((r) => ({
+      ...r,
+      reviewer: reviewerMap.get(String(r.reviewer)) || { _id: r.reviewer },
+      targetUser: targetUserMap.get(String(r.targetUser)) || { _id: r.targetUser },
+    }));
 
     res.status(200).json({
       reviews,

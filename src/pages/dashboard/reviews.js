@@ -108,7 +108,7 @@ export default function MyReviews() {
               const remainingMs = Math.max(0, (24*60*60*1000) - (Date.now() - createdAtMs));
               const canEdit = remainingMs > 0;
               const remainingH = Math.ceil(remainingMs / (60*60*1000));
-              const targetName = r.transaction?.provider?._id === user?.id ? r.transaction?.receiver?.name : r.transaction?.provider?.name;
+              const targetName = r.targetUser?.name || r.transaction?.provider?.name || r.transaction?.receiver?.name;
               const skillName = r.transaction?.skill?.name || 'Skill Exchange';
               return (
                 <div key={r._id} className="py-4 flex items-start justify-between gap-4">
