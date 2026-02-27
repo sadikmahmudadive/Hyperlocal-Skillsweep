@@ -23,7 +23,7 @@ async function handler(req, res) {
     }
 
     // Ensure escrow is present
-    if (!transaction.escrowAmount || !transaction.heldBy) {
+    if (transaction.escrowAmount == null || !transaction.heldBy) {
       return res.status(400).json({ message: 'Escrow not present; cannot start transaction' });
     }
 
