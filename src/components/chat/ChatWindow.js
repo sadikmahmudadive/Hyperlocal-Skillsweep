@@ -28,11 +28,87 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const textareaRef = useRef(null);
   const [showDetails, setShowDetails] = useState(false);
+  const senderCacheRef = useRef(new Map());
+  const senderFetchInFlightRef = useRef(new Set());
   
   const messageRefs = useRef({});
   const setMsgRef = (id, el) => {
     if (!id) return;
     messageRefs.current[id] = el || undefined;
+  };
+
+  const getSenderId = (sender) => {
+    if (sender && typeof sender === 'object') return String(sender._id || sender.id || '');
+    return String(sender || '');
+  };
+
+  const getParticipantSender = (senderId) => {
+    if (!senderId) return null;
+    const participant = (conversation?.participants || []).find(
+      (p) => String(p?._id || p?.id) === String(senderId)
+    );
+    if (!participant) return null;
+    return {
+      _id: participant._id || participant.id,
+      id: participant.id || participant._id,
+      name: participant.name,
+      avatar: participant.avatar,
+    };
+  };
+
+  const normalizeIncomingMessage = (message) => {
+    if (!message) return message;
+    const senderId = getSenderId(message.sender);
+    const senderObj = message.sender && typeof message.sender === 'object' ? message.sender : null;
+    const fromParticipant = getParticipantSender(senderId);
+    const fromCache = senderId ? senderCacheRef.current.get(String(senderId)) : null;
+    const normalizedSender =
+      (senderObj && (senderObj._id || senderObj.id)
+        ? { _id: senderObj._id || senderObj.id, ...senderObj }
+        : null) ||
+      fromParticipant ||
+      fromCache ||
+      (senderId ? { _id: senderId, id: senderId } : { _id: '' });
+
+    return {
+      ...message,
+      sender: normalizedSender,
+    };
+  };
+
+  const hydrateSenderForMessage = async (messageId, senderId) => {
+    const sid = String(senderId || '');
+    if (!sid || !messageId) return;
+
+    const cached = senderCacheRef.current.get(sid);
+    if (cached) {
+      setMessages((prev) => prev.map((m) => (m._id === messageId ? { ...m, sender: { ...m.sender, ...cached, _id: sid } } : m)));
+      return;
+    }
+
+    if (senderFetchInFlightRef.current.has(sid)) return;
+    senderFetchInFlightRef.current.add(sid);
+
+    try {
+      const response = await fetch(`/api/users/${encodeURIComponent(sid)}`);
+      if (!response.ok) return;
+      const data = await response.json();
+      const sender = data?.user;
+      if (!sender) return;
+
+      const shaped = {
+        _id: sender._id || sender.id || sid,
+        id: sender.id || sender._id || sid,
+        name: sender.name,
+        avatar: sender.avatar,
+      };
+
+      senderCacheRef.current.set(sid, shaped);
+      setMessages((prev) => prev.map((m) => (m._id === messageId ? { ...m, sender: { ...m.sender, ...shaped } } : m)));
+    } catch (_) {
+    } finally {
+      senderFetchInFlightRef.current.delete(sid);
+    }
   };
 
   const handleUnavailableAction = (feature) => {
@@ -79,7 +155,7 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
         body: JSON.stringify({ conversationId: conversation._id }),
       });
       setMessages((prev) =>
-        prev.map((m) => (String(m?.sender?._id) !== String(user.id) ? { ...m, read: true } : m))
+        prev.map((m) => (getSenderId(m?.sender) !== String(user.id) ? { ...m, read: true } : m))
       );
       setShowJumpUnread(false);
       refreshUnreadBestEffort();
@@ -145,14 +221,19 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
       try {
         const data = JSON.parse(ev.data);
         if (data?.conversationId === conversation._id && data?.message) {
+          const normalizedMessage = normalizeIncomingMessage(data.message);
           setMessages((prev) => {
-            if (prev.some((m) => m._id === data.message._id)) return prev;
-            return [...prev, data.message];
+            if (prev.some((m) => m._id === normalizedMessage._id)) return prev;
+            return [...prev, normalizedMessage];
           });
+          const senderId = getSenderId(normalizedMessage?.sender);
+          if (senderId && (!normalizedMessage?.sender?.name || !normalizedMessage?.sender?.avatar)) {
+            hydrateSenderForMessage(normalizedMessage._id, senderId);
+          }
           onConversationActivity?.();
           if (isAtBottom) {
             requestAnimationFrame(() => scrollToBottom());
-            if (String(data?.message?.sender?._id) !== String(user.id)) {
+            if (getSenderId(normalizedMessage?.sender) !== String(user.id)) {
               markConversationReadBestEffort();
             }
           } else {
@@ -179,7 +260,7 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
         // If I read, mark other's messages read. If other read, mark my messages read.
         setMessages((prev) =>
           prev.map((m) => {
-            const senderId = String(m?.sender?._id);
+            const senderId = getSenderId(m?.sender);
             if (!senderId) return m;
             if (readerId === String(user.id)) {
               return senderId !== String(user.id) ? { ...m, read: true } : m;
@@ -205,7 +286,7 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
   useEffect(() => {
     if (!conversation?._id) return;
     if (!isAtBottom) return;
-    const hasUnreadFromOther = messages.some((m) => !m.read && String(m?.sender?._id) !== String(user.id));
+    const hasUnreadFromOther = messages.some((m) => !m.read && getSenderId(m?.sender) !== String(user.id));
     if (!hasUnreadFromOther) return;
     markConversationReadBestEffort();
   }, [isAtBottom, conversation?._id, messages]);
@@ -260,10 +341,11 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
       });
       const data = await response.json();
       if (response.ok) {
+        const normalizedMessages = (data.messages || []).map(normalizeIncomingMessage);
         if (beforeCursor) {
-          setMessages(prev => [...data.messages, ...prev]);
+          setMessages(prev => [...normalizedMessages, ...prev]);
         } else {
-          setMessages(data.messages);
+          setMessages(normalizedMessages);
           requestAnimationFrame(() => scrollToBottom(false));
         }
         setHasMore(!!data.hasMore);
@@ -332,7 +414,12 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
     const tempId = 'temp-' + Date.now();
     const optimistic = {
       _id: tempId,
-      sender: { _id: user.id },
+      sender: {
+        _id: user.id,
+        id: user.id,
+        name: user.name,
+        avatar: user.avatar,
+      },
       content: content,
       createdAt: new Date().toISOString(),
       read: false,
@@ -357,7 +444,8 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
 
       const data = await response.json();
       if (response.ok) {
-        setMessages(prev => prev.map(m => m._id === tempId ? data.message : m));
+        const normalizedMessage = normalizeIncomingMessage(data.message);
+        setMessages(prev => prev.map(m => m._id === tempId ? normalizedMessage : m));
         onConversationActivity?.();
         const refreshFn = () => fetchMessages(true);
         if (triggerRefresh) {
@@ -417,7 +505,7 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
   const jumpToFirstUnread = async () => {
     if (searchingUnread) return;
     setSearchingUnread(true);
-    const isUnread = (m) => !m.read && m.sender?._id !== user.id;
+    const isUnread = (m) => !m.read && getSenderId(m?.sender) !== String(user.id);
     // Check current messages first
     let idx = messages.findIndex(isUnread);
     let cursor = nextCursor;
@@ -554,8 +642,8 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
         ) : (
           messages.reduce((acc, message, index) => {
             const prevMessage = messages[index - 1];
-            const isMe = message.sender._id === user.id;
-            const isSameSender = prevMessage && prevMessage.sender._id === message.sender._id;
+            const isMe = getSenderId(message?.sender) === String(user.id);
+            const isSameSender = prevMessage && getSenderId(prevMessage?.sender) === getSenderId(message?.sender);
             
             // Date separator
             const dateLabel = getDateLabel(message.createdAt);

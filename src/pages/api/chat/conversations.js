@@ -8,6 +8,7 @@ async function handler(req, res) {
   }
 
   try {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     const userId = req.userId;
 
     // Best-effort presence update

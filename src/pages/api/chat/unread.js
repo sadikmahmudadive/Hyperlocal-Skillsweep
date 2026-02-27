@@ -5,6 +5,7 @@ import { listConversationsForUser } from '../../../lib/firestoreStore';
 async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ message: 'Method not allowed' });
   try {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     const userId = String(req.userId);
     const conversations = await listConversationsForUser(userId);
     let total = 0;

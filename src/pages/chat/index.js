@@ -133,14 +133,24 @@ export default function ChatPage() {
     return () => clearTimeout(t);
   }, [query]);
 
+  const getToken = () => {
+    try {
+      return typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    } catch (_) {
+      return null;
+    }
+  };
+
   useEffect(() => {
+    if (!user?.id) return;
     refreshChatState();
-  }, []);
+  }, [user?.id]);
 
   useAutoRefresh(120000);
 
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!user?.id) return;
+    const token = getToken();
     if (!token) return;
     const es = new EventSource(`/api/events/stream?token=${encodeURIComponent(token)}`);
     esRef.current = es;
@@ -157,11 +167,13 @@ export default function ChatPage() {
       es.removeEventListener('conversation-start', refresh);
       es.removeEventListener('read', refresh);
       es.close();
+      esRef.current = null;
     };
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!user?.id) return;
+    const token = getToken();
     if (!token) return;
 
     const onVisible = () => {
@@ -179,7 +191,7 @@ export default function ChatPage() {
       clearInterval(intervalId);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     if (activeTab === 'people' && !debouncedQuery.trim()) {
@@ -195,9 +207,11 @@ export default function ChatPage() {
 
   const fetchConversations = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/chat/conversations', {
-        headers: { Authorization: `Bearer ${token}` }
+      const token = getToken();
+      if (!token) return;
+      const res = await fetch(`/api/chat/conversations?_ts=${Date.now()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store'
       });
       const data = await res.json();
       if (res.ok) {
@@ -218,9 +232,11 @@ export default function ChatPage() {
 
   const fetchUnread = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/chat/unread', {
-        headers: { Authorization: `Bearer ${token}` }
+      const token = getToken();
+      if (!token) return;
+      const res = await fetch(`/api/chat/unread?_ts=${Date.now()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store'
       });
       const data = await res.json();
       if (res.ok) setUnreadMap(data.unreadCounts || data.perConversation || {});
