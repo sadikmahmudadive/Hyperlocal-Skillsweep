@@ -258,9 +258,14 @@ export default function AppLayout({ children }) {
             {/* Mobile menu button */}
             <button
               onClick={() => setMobileOpen((v) => !v)}
-              className="md:hidden inline-flex items-center justify-center rounded-full p-2 text-soft transition-colors hover:bg-slate-100 hover:text-strong dark:text-slate-200 dark:hover:bg-slate-800"
+              className="md:hidden relative inline-flex items-center justify-center rounded-full p-2 text-soft transition-colors hover:bg-slate-100 hover:text-strong dark:text-slate-200 dark:hover:bg-slate-800"
               aria-label="Toggle Menu"
             >
+              {isAuthenticated && hasUnread && (
+                <span className="absolute -top-1 -right-1 inline-flex min-h-[16px] min-w-[16px] items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white shadow-soft">
+                  {unreadCount > 0 ? unreadCount : '•'}
+                </span>
+              )}
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
