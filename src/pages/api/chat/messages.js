@@ -6,6 +6,7 @@ import { addConversationMessage, getConversationById, getUserById, getUsersByIds
 async function handler(req, res) {
   if (req.method === 'GET') {
     try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       const { conversationId } = req.query;
       let { limit, before } = req.query;
       const userId = req.userId;
@@ -47,6 +48,7 @@ async function handler(req, res) {
     }
   } else if (req.method === 'POST') {
     try {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       const { conversationId, content, type } = req.body;
       const userId = req.userId;
 

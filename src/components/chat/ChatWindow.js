@@ -30,6 +30,10 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
   const [aiSuggestions, setAiSuggestions] = useState([]);
   const textareaRef = useRef(null);
   const [showDetails, setShowDetails] = useState(false);
+  const isAtBottomRef = useRef(true);
+  const onConversationActivityRef = useRef(onConversationActivity);
+  const fallbackPollRef = useRef(null);
+  const fetchSeqRef = useRef(0);
   const senderCacheRef = useRef(new Map());
   const senderFetchInFlightRef = useRef(new Set());
   
@@ -38,6 +42,10 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
     if (!id) return;
     messageRefs.current[id] = el || undefined;
   };
+
+  useEffect(() => {
+    onConversationActivityRef.current = onConversationActivity;
+  }, [onConversationActivity]);
 
   const getSenderId = (sender) => {
     if (sender && typeof sender === 'object') return String(sender._id || sender.id || '');
@@ -181,6 +189,7 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
       const nearTop = el.scrollTop <= 0;
       const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
       setIsAtBottom(nearBottom);
+      isAtBottomRef.current = nearBottom;
       if (nearTop && hasMore && !loadingOlderRef.current) {
         loadingOlderRef.current = true;
         const prevHeight = el.scrollHeight;
@@ -208,6 +217,10 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
   }, [conversation?._id]);
 
   useEffect(() => {
+    isAtBottomRef.current = isAtBottom;
+  }, [isAtBottom]);
+
+  useEffect(() => {
     if (!isAtBottom) return;
     scrollToBottom();
   }, [messages, isAtBottom]);
@@ -218,8 +231,26 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
     if (!conversation) return;
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     if (!token) return;
+
+    const startFallbackPolling = () => {
+      if (fallbackPollRef.current) return;
+      fallbackPollRef.current = setInterval(() => {
+        if (document.visibilityState !== 'visible') return;
+        fetchMessages(true, null, { skipMarkRead: true });
+      }, 5000);
+    };
+
+    const stopFallbackPolling = () => {
+      if (!fallbackPollRef.current) return;
+      clearInterval(fallbackPollRef.current);
+      fallbackPollRef.current = null;
+    };
+
     const es = new EventSource(`/api/events/stream?token=${encodeURIComponent(token)}`);
-    es.onopen = () => setSseConnected(true);
+    es.onopen = () => {
+      setSseConnected(true);
+      stopFallbackPolling();
+    };
     const onMessage = (ev) => {
       try {
         const data = JSON.parse(ev.data);
@@ -233,8 +264,8 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
           if (senderId && (!normalizedMessage?.sender?.name || !normalizedMessage?.sender?.avatar)) {
             hydrateSenderForMessage(normalizedMessage._id, senderId);
           }
-          onConversationActivity?.();
-          if (isAtBottom) {
+          onConversationActivityRef.current?.();
+          if (isAtBottomRef.current) {
             requestAnimationFrame(() => scrollToBottom());
             if (getSenderId(normalizedMessage?.sender) !== String(user.id)) {
               markConversationReadBestEffort();
@@ -276,14 +307,18 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
     es.addEventListener('message', onMessage);
     es.addEventListener('typing', onTyping);
     es.addEventListener('read', onRead);
-    es.onerror = () => { setSseConnected(false); };
+    es.onerror = () => {
+      setSseConnected(false);
+      startFallbackPolling();
+    };
     return () => {
       es.removeEventListener('message', onMessage);
       es.removeEventListener('typing', onTyping);
       es.removeEventListener('read', onRead);
       es.close();
+      stopFallbackPolling();
     };
-  }, [conversation?._id, isAtBottom]);
+  }, [conversation?._id, user?.id]);
 
   // When user scrolls back to bottom, mark any visible unread messages read.
   useEffect(() => {
@@ -332,18 +367,24 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
     typingTimeoutRef.current = setTimeout(() => sendTyping(false), 1200);
   };
 
-  const fetchMessages = async (silent = false, beforeCursor = null) => {
+  const fetchMessages = async (silent = false, beforeCursor = null, options = {}) => {
     if (!conversation) return;
+    const { skipMarkRead = false } = options;
     if (!silent) setLoading(true);
+    const requestSeq = ++fetchSeqRef.current;
     try {
       const token = localStorage.getItem('token');
+      if (!token) return;
       const qs = new URLSearchParams({ conversationId: conversation._id });
       if (beforeCursor) qs.set('before', beforeCursor);
+      qs.set('_ts', String(Date.now()));
       const response = await fetch(`/api/chat/messages?${qs.toString()}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
+        cache: 'no-store'
       });
       const data = await response.json();
       if (response.ok) {
+        if (!beforeCursor && requestSeq !== fetchSeqRef.current) return;
         const normalizedMessages = (data.messages || []).map(normalizeIncomingMessage);
         if (beforeCursor) {
           setMessages(prev => [...normalizedMessages, ...prev]);
@@ -354,7 +395,7 @@ export default function ChatWindow({ conversation, onClose, onConversationActivi
         setHasMore(!!data.hasMore);
         setNextCursor(data.nextCursor || null);
         // mark others' messages as read on initial load only
-        if (!beforeCursor) {
+        if (!beforeCursor && !skipMarkRead) {
           try {
             await fetch('/api/chat/read', {
               method: 'PATCH',

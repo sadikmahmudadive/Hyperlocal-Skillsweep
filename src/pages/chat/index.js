@@ -73,8 +73,13 @@ export default function ChatPage() {
   const [suggestedLoading, setSuggestedLoading] = useState(false);
   const [ratingCache, setRatingCache] = useState({});
   const [listFilter, setListFilter] = useState('all');
+  const [streamConnected, setStreamConnected] = useState(false);
+  const [streamReconnectCount, setStreamReconnectCount] = useState(0);
+  const [lastStreamEventAt, setLastStreamEventAt] = useState(null);
   const searchInputRef = useRef(null);
   const esRef = useRef(null);
+  const reconnectTimerRef = useRef(null);
+  const reconnectDelayRef = useRef(1000);
   const refreshInFlightRef = useRef(false);
 
   const filterChips = [
@@ -152,22 +157,66 @@ export default function ChatPage() {
     if (!user?.id) return;
     const token = getToken();
     if (!token) return;
-    const es = new EventSource(`/api/events/stream?token=${encodeURIComponent(token)}`);
-    esRef.current = es;
+
+    let disposed = false;
+
     const refresh = () => {
+      setLastStreamEventAt(Date.now());
       refreshChatState();
     };
-    es.addEventListener('ready', refresh);
-    es.addEventListener('message', refresh);
-    es.addEventListener('conversation-start', refresh);
-    es.addEventListener('read', refresh);
+
+    const connect = () => {
+      if (disposed || esRef.current) return;
+      const stream = new EventSource(`/api/events/stream?token=${encodeURIComponent(token)}`);
+      esRef.current = stream;
+
+      const onOpen = () => {
+        setStreamConnected(true);
+        setStreamReconnectCount(0);
+        reconnectDelayRef.current = 1000;
+        setLastStreamEventAt(Date.now());
+      };
+
+      const onError = () => {
+        setStreamConnected(false);
+        try {
+          stream.close();
+        } catch (_) {}
+        if (esRef.current === stream) esRef.current = null;
+
+        if (disposed) return;
+        const delay = reconnectDelayRef.current;
+        reconnectDelayRef.current = Math.min(delay * 2, 30000);
+        setStreamReconnectCount((n) => n + 1);
+
+        if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = setTimeout(() => {
+          reconnectTimerRef.current = null;
+          connect();
+        }, delay);
+      };
+
+      stream.onopen = onOpen;
+      stream.addEventListener('ready', refresh);
+      stream.addEventListener('message', refresh);
+      stream.addEventListener('conversation-start', refresh);
+      stream.addEventListener('read', refresh);
+      stream.onerror = onError;
+    };
+
+    connect();
+
     return () => {
-      es.removeEventListener('ready', refresh);
-      es.removeEventListener('message', refresh);
-      es.removeEventListener('conversation-start', refresh);
-      es.removeEventListener('read', refresh);
-      es.close();
-      esRef.current = null;
+      disposed = true;
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+      if (esRef.current) {
+        esRef.current.close();
+        esRef.current = null;
+      }
+      setStreamConnected(false);
     };
   }, [user?.id]);
 
@@ -385,6 +434,13 @@ export default function ChatPage() {
                     {user?.name && (
                       <span className='text-xs text-slate-500 dark:text-slate-400'>· {user.name.split(' ')[0]}</span>
                     )}
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${streamConnected ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200' : 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200'}`}
+                      title={lastStreamEventAt ? `Last event: ${new Date(lastStreamEventAt).toLocaleTimeString()}` : 'Waiting for realtime events'}
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full ${streamConnected ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
+                      {streamConnected ? 'Live' : `Reconnecting${streamReconnectCount ? ` (${streamReconnectCount})` : ''}`}
+                    </span>
                   </div>
                 </div>
                 <div className='flex items-center gap-2'>
